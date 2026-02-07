@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.MainController"
+            prefHeight="800.0" prefWidth="1400.0">
+
+    <!-- 顶部：标题 -->
+    <top>
+        <VBox styleClass="header" style="-fx-background-color: #2196F3; -fx-padding: 15;">
+            <Label text="赛事选手芯片核验系统" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+        </VBox>
+    </top>
+
+    <!-- 中间：TabPane -->
+    <center>
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab fx:id="raceManagementTab" text="赛事管理">
+                    <BorderPane>
+                        <center>
+                            <Label text="赛事管理界面加载中..." style="-fx-font-size: 14px;"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+
+                <Tab fx:id="athleteManagementTab" text="选手维护">
+                    <BorderPane>
+                        <center>
+                            <Label text="选手维护界面加载中..." style="-fx-font-size: 14px;"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+
+                <Tab fx:id="verificationTab" text="芯片核验">
+                    <BorderPane>
+                        <center>
+                            <Label text="芯片核验界面加载中..." style="-fx-font-size: 14px;"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+
+                <Tab fx:id="exportTab" text="数据导出">
+                    <BorderPane>
+                        <center>
+                            <Label text="数据导出界面加载中..." style="-fx-font-size: 14px;"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+
+</BorderPane>

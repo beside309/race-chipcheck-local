@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.AthleteManagementController"
+            prefHeight="700.0" prefWidth="1350.0">
+
+    <!-- 顶部：控制栏 -->
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <!-- 第一行：赛事选择 -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Label text="选择赛事：" style="-fx-font-size: 14px;"/>
+                <ComboBox fx:id="raceComboBox" prefWidth="300" onAction="#onRaceSelected"/>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <Label fx:id="athleteCountLabel" text="选手数量: 0"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+            </HBox>
+
+            <!-- 第二行：操作按钮 -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="importButton" text="导入Excel" onAction="#handleImport"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Button fx:id="exportButton" text="导出名单" onAction="#handleExport"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <Button fx:id="addButton" text="新增选手" onAction="#handleAdd"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Button fx:id="deleteButton" text="删除选手" onAction="#handleDelete"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <Button fx:id="refreshButton" text="刷新" onAction="#handleRefresh"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- 中间：TableView（可编辑） -->
+    <center>
+        <TableView fx:id="athleteTable" editable="true" style="-fx-font-size: 13px;">
+            <columns>
+                <TableColumn fx:id="bibNumberColumn" text="参赛号码" prefWidth="120"/>
+                <TableColumn fx:id="nameColumn" text="姓名" prefWidth="120"/>
+                <TableColumn fx:id="chip1Column" text="芯片1（必填）" prefWidth="180"/>
+                <TableColumn fx:id="chip2Column" text="芯片2" prefWidth="180"/>
+                <TableColumn fx:id="chip3Column" text="芯片3" prefWidth="180"/>
+                <TableColumn fx:id="chip4Column" text="芯片4" prefWidth="180"/>
+            </columns>
+            <placeholder>
+                <Label text="暂无选手，点击"导入Excel"导入名单或"新增选手"手动添加"
+                       style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+    <!-- 底部：提示信息 -->
+    <bottom>
+        <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #f5f5f5;">
+            <Label text="提示：双击单元格可直接编辑选手信息"
+                   style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+            <Label text="Excel格式：参赛号码 | 姓名 | 芯片1 | 芯片2 | 芯片3 | 芯片4"
+                   style="-fx-font-size: 12px; -fx-text-fill: #999;"/>
+        </VBox>
+    </bottom>
+
+</BorderPane>

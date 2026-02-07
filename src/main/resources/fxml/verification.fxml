@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.VerificationController"
+            prefHeight="700.0" prefWidth="1350.0">
+
+    <!-- 顶部：控制栏 -->
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <!-- 第一行：赛事选择和连接按钮 -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Label text="选择赛事：" style="-fx-font-size: 14px;"/>
+                <ComboBox fx:id="raceComboBox" prefWidth="250" onAction="#onRaceSelected"/>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <Button fx:id="connectButton" text="连接读卡器" onAction="#handleConnect"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+
+                <Label text="读卡器状态：" style="-fx-font-size: 14px;"/>
+                <Circle fx:id="readerStatusIndicator" radius="8"/>
+                <Label fx:id="readerStatusLabel" text="未连接" style="-fx-font-size: 14px;"/>
+            </HBox>
+
+            <!-- 第二行：操作按钮 -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="clearButton" text="清空记录" onAction="#handleClear"
+                        style="-fx-font-size: 13px;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- 中间：TableView -->
+    <center>
+        <TableView fx:id="recordTable" style="-fx-font-size: 13px;">
+            <columns>
+                <TableColumn fx:id="timeColumn" text="核验时间" prefWidth="150"/>
+                <TableColumn fx:id="chipIdColumn" text="芯片号" prefWidth="180"/>
+                <TableColumn fx:id="bibNumberColumn" text="参赛号" prefWidth="100"/>
+                <TableColumn fx:id="nameColumn" text="姓名" prefWidth="120"/>
+                <TableColumn fx:id="statusColumn" text="状态" prefWidth="80"/>
+                <TableColumn fx:id="remarkColumn" text="备注" prefWidth="200"/>
+            </columns>
+            <placeholder>
+                <Label text="暂无核验记录" style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+    <!-- 底部：统计信息 -->
+    <bottom>
+        <HBox spacing="30" alignment="CENTER_LEFT" style="-fx-padding: 15; -fx-background-color: #f5f5f5;">
+            <Label fx:id="recordCountLabel" text="核验记录数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
+            <Label fx:id="athleteCountLabel" text="核验人数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.ExportController"
+            prefHeight="700.0" prefWidth="1350.0">
+
+    <center>
+        <VBox spacing="30" alignment="CENTER" style="-fx-padding: 50;">
+            <Label text="数据导出" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+            <VBox spacing="15" maxWidth="600">
+                <!-- 赛事选择 -->
+                <HBox spacing="15" alignment="CENTER_LEFT">
+                    <Label text="选择赛事：" style="-fx-font-size: 16px;" prefWidth="120"/>
+                    <ComboBox fx:id="raceComboBox" prefWidth="400"
+                             style="-fx-font-size: 14px;"/>
+                </HBox>
+
+                <!-- 导出按钮 -->
+                <HBox spacing="15" alignment="CENTER">
+                    <Button fx:id="exportButton" text="导出核验记录" onAction="#handleExport"
+                            style="-fx-font-size: 16px; -fx-padding: 12 40; -fx-background-color: #2196F3; -fx-text-fill: white;"/>
+                </HBox>
+
+                <!-- 说明信息 -->
+                <VBox spacing="10" style="-fx-padding: 20; -fx-background-color: #f5f5f5; -fx-border-color: #ddd; -fx-border-radius: 5;">
+                    <Label text="导出说明：" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="• 文件名格式：芯片核验记录+赛事名称+导出时间.xlsx"
+                           style="-fx-font-size: 13px;"/>
+                    <Label text="• 包含字段：核验时间、芯片号、参赛号、姓名、状态、备注"
+                           style="-fx-font-size: 13px;"/>
+                    <Label text="• 导出所有核验记录，包括成功和失败的记录"
+                           style="-fx-font-size: 13px;"/>
+                </VBox>
+            </VBox>
+
+            <Label fx:id="infoLabel" text=""
+                   style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+        </VBox>
+    </center>
+
+</BorderPane>
