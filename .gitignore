@@ -37,3 +37,24 @@ env/
 ENV/
 *.egg-info/
 .Python
+
+# Maven/Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+.classpath
+.project
+.settings/
+
+# Claude Code
+.claude/
+
+# Database
+*.db
+*.db-journal
+
+# Logs
+logs/
