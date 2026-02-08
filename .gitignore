@@ -8,7 +8,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
-
+.history/
+.specstory/
+installer/output/
 # 日志文件
 *.log
 

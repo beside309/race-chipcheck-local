@@ -6,12 +6,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.race</groupId>
-    <artifactId>race-chipcheck</artifactId>
+    <artifactId>race-chipcheck-offline</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Race Chip Check</name>
-    <description>赛事选手芯片核验系统</description>
+    <name>Race Chip Check Offline Application</name>
+    <description>赛事选手芯片核验系统脱机版</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -126,27 +126,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.2</version>
-            </plugin>
-
-            <!-- JaCoCo Plugin（代码覆盖率） -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
