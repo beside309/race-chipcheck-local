@@ -51,23 +51,26 @@ public class AthleteService {
      * 创建选手
      */
     public Athlete createAthlete(Athlete athlete) {
-        String sql = "INSERT INTO athletes (race_id, bib_number, name, chip1, chip2, chip3, chip4) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String insertSql = "INSERT INTO athletes (race_id, bib_number, name, chip1, chip2, chip3, chip4) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String selectIdSql = "SELECT last_insert_rowid() as id";
 
-        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setLong(1, athlete.getRaceId());
-            stmt.setString(2, athlete.getBibNumber());
-            stmt.setString(3, athlete.getName());
-            stmt.setString(4, athlete.getChip1());
-            stmt.setString(5, athlete.getChip2());
-            stmt.setString(6, athlete.getChip3());
-            stmt.setString(7, athlete.getChip4());
+        try (PreparedStatement insertStmt = databaseService.getConnection().prepareStatement(insertSql)) {
+            insertStmt.setLong(1, athlete.getRaceId());
+            insertStmt.setString(2, athlete.getBibNumber());
+            insertStmt.setString(3, athlete.getName());
+            insertStmt.setString(4, athlete.getChip1());
+            insertStmt.setString(5, athlete.getChip2());
+            insertStmt.setString(6, athlete.getChip3());
+            insertStmt.setString(7, athlete.getChip4());
 
-            stmt.executeUpdate();
+            insertStmt.executeUpdate();
 
-            // 获取生成的ID
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
+            // 使用SQLite的last_insert_rowid()获取刚插入的ID
+            try (Statement selectStmt = databaseService.getConnection().createStatement();
+                 ResultSet rs = selectStmt.executeQuery(selectIdSql)) {
+
                 if (rs.next()) {
-                    Long id = rs.getLong(1);
+                    Long id = rs.getLong("id");
                     athlete.setId(id);
                     logger.info("创建选手成功：参赛号={}, ID={}", athlete.getBibNumber(), id);
                     return athlete;
@@ -75,7 +78,7 @@ public class AthleteService {
             }
         } catch (SQLException e) {
             logger.error("创建选手失败：参赛号={}", athlete.getBibNumber(), e);
-            throw new RuntimeException("创建选手失败", e);
+            throw new RuntimeException("创建选手失败：" + e.getMessage(), e);
         }
 
         throw new RuntimeException("创建选手失败：未能获取生成的ID");

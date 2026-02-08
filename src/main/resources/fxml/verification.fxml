@@ -13,25 +13,29 @@
     <!-- 顶部：控制栏 -->
     <top>
         <VBox spacing="10" style="-fx-padding: 10;">
-            <!-- 第一行：赛事选择和连接按钮 -->
+            <!-- 第一行：连接按钮和状态 -->
             <HBox spacing="15" alignment="CENTER_LEFT">
-                <Label text="选择赛事：" style="-fx-font-size: 14px;"/>
-                <ComboBox fx:id="raceComboBox" prefWidth="250" onAction="#onRaceSelected"/>
-
-                <Separator orientation="VERTICAL" prefHeight="30"/>
-
                 <Button fx:id="connectButton" text="连接读卡器" onAction="#handleConnect"
                         style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
 
                 <Label text="读卡器状态：" style="-fx-font-size: 14px;"/>
                 <Circle fx:id="readerStatusIndicator" radius="8"/>
                 <Label fx:id="readerStatusLabel" text="未连接" style="-fx-font-size: 14px;"/>
-            </HBox>
 
-            <!-- 第二行：操作按钮 -->
-            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
                 <Button fx:id="clearButton" text="清空记录" onAction="#handleClear"
                         style="-fx-font-size: 13px;"/>
+            </HBox>
+
+            <!-- 第二行：核验测试 -->
+            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #fffbf0; -fx-border-color: #ffd700; -fx-border-radius: 5;">
+                <Label text="核验测试：" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                <TextField fx:id="testChipIdField" promptText="手动输入芯片号进行测试" prefWidth="300"
+                           style="-fx-font-size: 14px;"/>
+                <Button fx:id="testButton" text="测试核验" onAction="#handleTest"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20; -fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+                <Label text="（用于测试系统是否正常工作）" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
             </HBox>
         </VBox>
     </top>

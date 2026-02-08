@@ -25,9 +25,6 @@ public class VerificationController {
     private static final Logger logger = LoggerFactory.getLogger(VerificationController.class);
 
     @FXML
-    private ComboBox<Race> raceComboBox;
-
-    @FXML
     private Button connectButton;
 
     @FXML
@@ -61,6 +58,12 @@ public class VerificationController {
     private Button clearButton;
 
     @FXML
+    private TextField testChipIdField;
+
+    @FXML
+    private Button testButton;
+
+    @FXML
     private Label recordCountLabel;
 
     @FXML
@@ -72,10 +75,14 @@ public class VerificationController {
     private final AthleteService athleteService;
     private final AlertSoundService alertSoundService;
     private final RfidReaderService rfidReaderService;
+    private final RaceListManager raceListManager;
     private VerificationService verificationService;
 
     // 数据
     private final ObservableList<VerificationRecord> records = FXCollections.observableArrayList();
+
+    // 当前赛事
+    private Race currentRace;
 
     public VerificationController() {
         // 初始化Services
@@ -84,6 +91,7 @@ public class VerificationController {
         this.athleteService = new AthleteService(databaseService);
         this.alertSoundService = new AlertSoundService();
         this.rfidReaderService = new RfidReaderService();
+        this.raceListManager = RaceListManager.getInstance();
     }
 
     @FXML
@@ -101,9 +109,6 @@ public class VerificationController {
         // 初始化TableView
         setupTableView();
 
-        // 初始化赛事下拉框
-        loadRaces();
-
         // 初始化连接状态
         updateConnectionStatus(false);
 
@@ -112,6 +117,27 @@ public class VerificationController {
 
         // 绑定统计标签
         updateStatistics();
+
+        // 设置测试输入框回车键支持
+        setupTestFieldEnterKey();
+    }
+
+    /**
+     * 设置测试输入框回车键支持
+     */
+    private void setupTestFieldEnterKey() {
+        testChipIdField.setOnAction(event -> handleTest());
+    }
+
+    /**
+     * 设置当前赛事
+     */
+    public void setCurrentRace(Race race) {
+        this.currentRace = race;
+        logger.info("芯片核验页面设置当前赛事：{} (ID: {})", race.getName(), race.getId());
+
+        // 设置VerificationService的当前赛事ID
+        verificationService.setCurrentRaceId(race.getId());
     }
 
     /**
@@ -162,31 +188,6 @@ public class VerificationController {
 
         // 绑定数据
         recordTable.setItems(records);
-    }
-
-    /**
-     * 加载赛事列表
-     */
-    private void loadRaces() {
-        List<Race> races = raceService.getAllRaces();
-        raceComboBox.setItems(FXCollections.observableArrayList(races));
-
-        if (!races.isEmpty()) {
-            raceComboBox.getSelectionModel().selectFirst();
-            onRaceSelected();
-        }
-    }
-
-    /**
-     * 赛事选择事件
-     */
-    @FXML
-    private void onRaceSelected() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace != null) {
-            verificationService.setCurrentRaceId(selectedRace.getId());
-            logger.info("选择赛事：{} (ID: {})", selectedRace.getName(), selectedRace.getId());
-        }
     }
 
     /**
@@ -255,6 +256,34 @@ public class VerificationController {
     private void updateStatistics() {
         recordCountLabel.setText("核验记录数: " + verificationService.getTotalRecordCount());
         athleteCountLabel.setText("核验人数: " + verificationService.getVerifiedAthleteCount());
+    }
+
+    /**
+     * 测试核验（手动输入芯片号）
+     */
+    @FXML
+    private void handleTest() {
+        String chipId = testChipIdField.getText();
+        if (chipId == null || chipId.trim().isEmpty()) {
+            AlertHelper.showWarning("输入错误", "请输入芯片号");
+            return;
+        }
+
+        if (currentRace == null) {
+            AlertHelper.showWarning("未选择赛事", "请先选择赛事");
+            return;
+        }
+
+        // 调用核验服务处理芯片
+        chipId = chipId.trim();
+        verificationService.processChip(chipId);
+        logger.info("测试核验芯片：{}", chipId);
+
+        // 清空输入框
+        testChipIdField.clear();
+
+        // 更新统计
+        updateStatistics();
     }
 
     /**

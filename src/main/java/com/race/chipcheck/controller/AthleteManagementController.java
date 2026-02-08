@@ -25,9 +25,6 @@ public class AthleteManagementController {
     private static final Logger logger = LoggerFactory.getLogger(AthleteManagementController.class);
 
     @FXML
-    private ComboBox<Race> raceComboBox;
-
-    @FXML
     private Button importButton;
 
     @FXML
@@ -72,9 +69,13 @@ public class AthleteManagementController {
     private final AthleteService athleteService;
     private final ExcelImportService excelImportService;
     private final DataExportService dataExportService;
+    private final RaceListManager raceListManager;
 
     // 数据
     private final ObservableList<Athlete> athletes = FXCollections.observableArrayList();
+
+    // 当前赛事
+    private Race currentRace;
 
     public AthleteManagementController() {
         this.databaseService = DatabaseService.getInstance();
@@ -82,6 +83,7 @@ public class AthleteManagementController {
         this.athleteService = new AthleteService(databaseService);
         this.excelImportService = new ExcelImportService(athleteService);
         this.dataExportService = new DataExportService(databaseService);
+        this.raceListManager = RaceListManager.getInstance();
     }
 
     @FXML
@@ -90,9 +92,17 @@ public class AthleteManagementController {
 
         // 初始化TableView
         setupTableView();
+    }
 
-        // 加载赛事列表
-        loadRaces();
+    /**
+     * 设置当前赛事
+     */
+    public void setCurrentRace(Race race) {
+        this.currentRace = race;
+        logger.info("选手维护页面设置当前赛事：{} (ID: {})", race.getName(), race.getId());
+
+        // 加载选手列表
+        loadAthletes(race.getId());
     }
 
     /**
@@ -164,30 +174,6 @@ public class AthleteManagementController {
     }
 
     /**
-     * 加载赛事列表
-     */
-    private void loadRaces() {
-        List<Race> races = raceService.getAllRaces();
-        raceComboBox.setItems(FXCollections.observableArrayList(races));
-
-        if (!races.isEmpty()) {
-            raceComboBox.getSelectionModel().selectFirst();
-            onRaceSelected();
-        }
-    }
-
-    /**
-     * 赛事选择事件
-     */
-    @FXML
-    private void onRaceSelected() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace != null) {
-            loadAthletes(selectedRace.getId());
-        }
-    }
-
-    /**
      * 加载选手列表
      */
     private void loadAthletes(Long raceId) {
@@ -210,8 +196,7 @@ public class AthleteManagementController {
      */
     @FXML
     private void handleImport() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace == null) {
+        if (currentRace == null) {
             AlertHelper.showWarning("未选择赛事", "请先选择赛事");
             return;
         }
@@ -225,11 +210,11 @@ public class AthleteManagementController {
         File file = fileChooser.showOpenDialog(importButton.getScene().getWindow());
         if (file != null) {
             try {
-                ImportValidationResult result = excelImportService.importAthletes(file, selectedRace.getId());
+                ImportValidationResult result = excelImportService.importAthletes(file, currentRace.getId());
 
                 if (result.isValid()) {
                     AlertHelper.showInfo("导入成功", "成功导入 " + result.getImportedCount() + " 个选手");
-                    loadAthletes(selectedRace.getId());
+                    loadAthletes(currentRace.getId());
                 } else {
                     AlertHelper.showErrorWithDetails("导入失败", "数据校验失败，未导入任何数据", result.getErrorSummary());
                 }
@@ -246,8 +231,7 @@ public class AthleteManagementController {
      */
     @FXML
     private void handleExport() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace == null) {
+        if (currentRace == null) {
             AlertHelper.showWarning("未选择赛事", "请先选择赛事");
             return;
         }
@@ -259,7 +243,7 @@ public class AthleteManagementController {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("保存Excel文件");
-        fileChooser.setInitialFileName(DataExportService.generateExportFileName(selectedRace.getName()));
+        fileChooser.setInitialFileName(DataExportService.generateExportFileName(currentRace.getName()));
         fileChooser.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Excel文件", "*.xlsx")
         );
@@ -267,7 +251,7 @@ public class AthleteManagementController {
         File file = fileChooser.showSaveDialog(exportButton.getScene().getWindow());
         if (file != null) {
             try {
-                dataExportService.exportVerificationRecords(selectedRace.getId(), selectedRace.getName(), file);
+                dataExportService.exportVerificationRecords(currentRace.getId(), currentRace.getName(), file);
                 AlertHelper.showInfo("导出成功", "选手名单已导出到：\n" + file.getAbsolutePath());
             } catch (Exception e) {
                 AlertHelper.showError("导出失败", "导出失败：" + e.getMessage());
@@ -281,15 +265,14 @@ public class AthleteManagementController {
      */
     @FXML
     private void handleAdd() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace == null) {
+        if (currentRace == null) {
             AlertHelper.showWarning("未选择赛事", "请先选择赛事");
             return;
         }
 
         // 创建空选手
         Athlete athlete = new Athlete();
-        athlete.setRaceId(selectedRace.getId());
+        athlete.setRaceId(currentRace.getId());
         athlete.setBibNumber("请输入参赛号");
         athlete.setName("请输入姓名");
         athlete.setChip1("请输入芯片号");
@@ -339,9 +322,8 @@ public class AthleteManagementController {
      */
     @FXML
     private void handleRefresh() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace != null) {
-            loadAthletes(selectedRace.getId());
+        if (currentRace != null) {
+            loadAthletes(currentRace.getId());
             AlertHelper.showInfo("刷新成功", "选手列表已刷新");
         }
     }

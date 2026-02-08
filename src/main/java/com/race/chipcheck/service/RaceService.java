@@ -24,26 +24,31 @@ public class RaceService {
      * 创建赛事
      */
     public Race createRace(String name) {
-        String sql = "INSERT INTO races (name, created_time) VALUES (?, ?)";
+        String insertSql = "INSERT INTO races (name) VALUES (?)";
+        String selectIdSql = "SELECT last_insert_rowid() as id";
 
-        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            LocalDateTime now = LocalDateTime.now();
-            stmt.setString(1, name);
-            stmt.setString(2, now.toString());
+        try (PreparedStatement insertStmt = databaseService.getConnection().prepareStatement(insertSql)) {
+            insertStmt.setString(1, name);
+            insertStmt.executeUpdate();
 
-            stmt.executeUpdate();
+            // 使用SQLite的last_insert_rowid()获取刚插入的ID
+            try (Statement selectStmt = databaseService.getConnection().createStatement();
+                 ResultSet rs = selectStmt.executeQuery(selectIdSql)) {
 
-            // 获取生成的ID
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
-                    Long id = rs.getLong(1);
+                    Long id = rs.getLong("id");
                     logger.info("创建赛事成功：{} (ID: {})", name, id);
-                    return new Race(id, name, now);
+
+                    // 查询完整的记录（包括created_time）
+                    Race race = getRaceById(id);
+                    if (race != null) {
+                        return race;
+                    }
                 }
             }
         } catch (SQLException e) {
             logger.error("创建赛事失败：{}", name, e);
-            throw new RuntimeException("创建赛事失败", e);
+            throw new RuntimeException("创建赛事失败：" + e.getMessage(), e);
         }
 
         throw new RuntimeException("创建赛事失败：未能获取生成的ID");
@@ -142,7 +147,21 @@ public class RaceService {
         Long id = rs.getLong("id");
         String name = rs.getString("name");
         String createdTimeStr = rs.getString("created_time");
-        LocalDateTime createdTime = LocalDateTime.parse(createdTimeStr);
+
+        // SQLite的CURRENT_TIMESTAMP返回格式: "YYYY-MM-DD HH:MM:SS"
+        LocalDateTime createdTime;
+        try {
+            if (createdTimeStr.contains(" ")) {
+                // SQLite CURRENT_TIMESTAMP格式
+                createdTime = LocalDateTime.parse(createdTimeStr.replace(" ", "T"));
+            } else {
+                // ISO格式
+                createdTime = LocalDateTime.parse(createdTimeStr);
+            }
+        } catch (Exception e) {
+            logger.error("解析时间失败：{}", createdTimeStr, e);
+            createdTime = LocalDateTime.now();
+        }
 
         return new Race(id, name, createdTime);
     }

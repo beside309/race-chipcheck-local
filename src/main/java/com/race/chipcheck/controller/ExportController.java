@@ -4,8 +4,8 @@ import com.race.chipcheck.model.Race;
 import com.race.chipcheck.service.DatabaseService;
 import com.race.chipcheck.service.DataExportService;
 import com.race.chipcheck.service.RaceService;
+import com.race.chipcheck.service.RaceListManager;
 import com.race.chipcheck.util.AlertHelper;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -15,16 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * 数据导出控制器
  */
 public class ExportController {
     private static final Logger logger = LoggerFactory.getLogger(ExportController.class);
-
-    @FXML
-    private ComboBox<Race> raceComboBox;
 
     @FXML
     private Button exportButton;
@@ -36,31 +32,29 @@ public class ExportController {
     private final DatabaseService databaseService;
     private final RaceService raceService;
     private final DataExportService dataExportService;
+    private final RaceListManager raceListManager;
+
+    // 当前赛事
+    private Race currentRace;
 
     public ExportController() {
         this.databaseService = DatabaseService.getInstance();
         this.raceService = new RaceService(databaseService);
         this.dataExportService = new DataExportService(databaseService);
+        this.raceListManager = RaceListManager.getInstance();
     }
 
     @FXML
     public void initialize() {
         logger.info("数据导出界面初始化");
-
-        // 加载赛事列表
-        loadRaces();
     }
 
     /**
-     * 加载赛事列表
+     * 设置当前赛事
      */
-    private void loadRaces() {
-        List<Race> races = raceService.getAllRaces();
-        raceComboBox.setItems(FXCollections.observableArrayList(races));
-
-        if (!races.isEmpty()) {
-            raceComboBox.getSelectionModel().selectFirst();
-        }
+    public void setCurrentRace(Race race) {
+        this.currentRace = race;
+        logger.info("数据导出页面设置当前赛事：{} (ID: {})", race.getName(), race.getId());
     }
 
     /**
@@ -68,8 +62,7 @@ public class ExportController {
      */
     @FXML
     private void handleExport() {
-        Race selectedRace = raceComboBox.getValue();
-        if (selectedRace == null) {
+        if (currentRace == null) {
             AlertHelper.showWarning("未选择赛事", "请先选择赛事");
             return;
         }
@@ -78,7 +71,7 @@ public class ExportController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("保存核验记录");
         fileChooser.setInitialFileName(
-            DataExportService.generateExportFileName(selectedRace.getName())
+            DataExportService.generateExportFileName(currentRace.getName())
         );
         fileChooser.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Excel文件", "*.xlsx")
@@ -88,8 +81,8 @@ public class ExportController {
         if (file != null) {
             try {
                 dataExportService.exportVerificationRecords(
-                    selectedRace.getId(),
-                    selectedRace.getName(),
+                    currentRace.getId(),
+                    currentRace.getName(),
                     file
                 );
 

@@ -1,5 +1,6 @@
 package com.race.chipcheck;
 
+import com.race.chipcheck.service.RaceListManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,8 +18,11 @@ public class RaceChipCheckApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            // 加载主窗口FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
+            // 初始化共享赛事列表
+            RaceListManager.getInstance().refreshRaces();
+
+            // 加载赛事选择页面（启动页面）
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/race_selection.fxml"));
             Parent root = loader.load();
 
             // 设置场景

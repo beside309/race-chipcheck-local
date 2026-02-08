@@ -12,19 +12,13 @@
     <!-- 顶部：控制栏 -->
     <top>
         <VBox spacing="10" style="-fx-padding: 10;">
-            <!-- 第一行：赛事选择 -->
-            <HBox spacing="15" alignment="CENTER_LEFT">
-                <Label text="选择赛事：" style="-fx-font-size: 14px;"/>
-                <ComboBox fx:id="raceComboBox" prefWidth="300" onAction="#onRaceSelected"/>
+            <!-- 操作按钮行 -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label fx:id="athleteCountLabel" text="选手数量: 0"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
 
                 <Separator orientation="VERTICAL" prefHeight="30"/>
 
-                <Label fx:id="athleteCountLabel" text="选手数量: 0"
-                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
-            </HBox>
-
-            <!-- 第二行：操作按钮 -->
-            <HBox spacing="10" alignment="CENTER_LEFT">
                 <Button fx:id="importButton" text="导入Excel" onAction="#handleImport"
                         style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
                 <Button fx:id="exportButton" text="导出名单" onAction="#handleExport"
@@ -57,7 +51,7 @@
                 <TableColumn fx:id="chip4Column" text="芯片4" prefWidth="180"/>
             </columns>
             <placeholder>
-                <Label text="暂无选手，点击"导入Excel"导入名单或"新增选手"手动添加"
+                <Label text="暂无选手，点击【导入Excel】导入名单或【新增选手】手动添加"
                        style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
             </placeholder>
         </TableView>

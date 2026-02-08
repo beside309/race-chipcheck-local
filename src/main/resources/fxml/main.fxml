@@ -9,10 +9,21 @@
             fx:controller="com.race.chipcheck.controller.MainController"
             prefHeight="800.0" prefWidth="1400.0">
 
-    <!-- 顶部：标题 -->
+    <!-- 顶部：标题栏 -->
     <top>
         <VBox styleClass="header" style="-fx-background-color: #2196F3; -fx-padding: 15;">
-            <Label text="赛事选手芯片核验系统" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <Button fx:id="backButton" text="← 返回赛事列表" onAction="#handleBack"
+                        style="-fx-font-size: 14px; -fx-background-color: white; -fx-text-fill: #2196F3; -fx-padding: 8 20;"/>
+
+                <VBox spacing="5">
+                    <HBox spacing="15" alignment="BASELINE_LEFT">
+                        <Label text="赛事选手芯片核验系统" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        <Label text="v1.0.0" style="-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.7);"/>
+                    </HBox>
+                    <Label fx:id="raceNameLabel" text="当前赛事：" style="-fx-font-size: 16px; -fx-text-fill: white;"/>
+                </VBox>
+            </HBox>
         </VBox>
     </top>
 
@@ -20,14 +31,6 @@
     <center>
         <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE">
             <tabs>
-                <Tab fx:id="raceManagementTab" text="赛事管理">
-                    <BorderPane>
-                        <center>
-                            <Label text="赛事管理界面加载中..." style="-fx-font-size: 14px;"/>
-                        </center>
-                    </BorderPane>
-                </Tab>
-
                 <Tab fx:id="athleteManagementTab" text="选手维护">
                     <BorderPane>
                         <center>

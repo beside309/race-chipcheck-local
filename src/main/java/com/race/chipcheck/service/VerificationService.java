@@ -103,31 +103,34 @@ public class VerificationService {
      * 保存核验记录到数据库
      */
     private void saveVerificationRecord(VerificationRecord record) {
-        String sql = "INSERT INTO verification_records (race_id, verification_time, chip_id, athlete_id, bib_number, name, status, remark) " +
+        String insertSql = "INSERT INTO verification_records (race_id, verification_time, chip_id, athlete_id, bib_number, name, status, remark) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String selectIdSql = "SELECT last_insert_rowid() as id";
 
-        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setLong(1, record.getRaceId());
-            stmt.setString(2, record.getVerificationTime().toString());
-            stmt.setString(3, record.getChipId());
+        try (PreparedStatement insertStmt = databaseService.getConnection().prepareStatement(insertSql)) {
+            insertStmt.setLong(1, record.getRaceId());
+            insertStmt.setString(2, record.getVerificationTime().toString());
+            insertStmt.setString(3, record.getChipId());
 
             if (record.getAthleteId() != null && record.getAthleteId() > 0) {
-                stmt.setLong(4, record.getAthleteId());
+                insertStmt.setLong(4, record.getAthleteId());
             } else {
-                stmt.setNull(4, Types.INTEGER);
+                insertStmt.setNull(4, Types.INTEGER);
             }
 
-            stmt.setString(5, record.getBibNumber());
-            stmt.setString(6, record.getName());
-            stmt.setString(7, record.getStatus());
-            stmt.setString(8, record.getRemark());
+            insertStmt.setString(5, record.getBibNumber());
+            insertStmt.setString(6, record.getName());
+            insertStmt.setString(7, record.getStatus());
+            insertStmt.setString(8, record.getRemark());
 
-            stmt.executeUpdate();
+            insertStmt.executeUpdate();
 
-            // 获取生成的ID
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
+            // 使用SQLite的last_insert_rowid()获取刚插入的ID
+            try (Statement selectStmt = databaseService.getConnection().createStatement();
+                 ResultSet rs = selectStmt.executeQuery(selectIdSql)) {
+
                 if (rs.next()) {
-                    Long id = rs.getLong(1);
+                    Long id = rs.getLong("id");
                     record.setId(id);
                 }
             }

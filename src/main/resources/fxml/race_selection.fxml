@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.RaceSelectionController"
+            prefHeight="700.0" prefWidth="1350.0">
+
+    <!-- 顶部：标题和操作按钮 -->
+    <top>
+        <VBox spacing="10" style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <VBox spacing="5">
+                    <Label text="赛事选手芯片核验系统"
+                           style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+                    <Label text="版本 1.0.0"
+                           style="-fx-font-size: 14px; -fx-text-fill: #999;"/>
+                </VBox>
+            </HBox>
+            <Label text="请选择或创建赛事"
+                   style="-fx-font-size: 16px; -fx-text-fill: #666;"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10 0 0 0;">
+                <Button fx:id="addButton" text="新增赛事" onAction="#handleAdd"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Button fx:id="editButton" text="编辑赛事" onAction="#handleEdit"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Button fx:id="deleteButton" text="删除赛事" onAction="#handleDelete"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+                <Button fx:id="refreshButton" text="刷新" onAction="#handleRefresh"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+                <Button fx:id="selectButton" text="进入选中的赛事 →" onAction="#handleSelect"
+                        style="-fx-font-size: 16px; -fx-background-color: #2196F3; -fx-text-fill: white; -fx-padding: 10 30; -fx-font-weight: bold;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- 中间：TableView -->
+    <center>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <TableView fx:id="raceTable" style="-fx-font-size: 13px;">
+                <columns>
+                    <TableColumn fx:id="idColumn" text="赛事ID" prefWidth="100"/>
+                    <TableColumn fx:id="nameColumn" text="赛事名称" prefWidth="800"/>
+                    <TableColumn fx:id="createdTimeColumn" text="创建时间" prefWidth="200"/>
+                </columns>
+                <placeholder>
+                    <Label text="暂无赛事，点击【新增赛事】按钮创建"
+                           style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
+                </placeholder>
+            </TableView>
+        </VBox>
+    </center>
+
+    <!-- 底部：提示信息 -->
+    <bottom>
+        <HBox alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #f5f5f5;">
+            <Label text="提示：双击行或点击【进入选中的赛事】按钮进入赛事管理界面"
+                   style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

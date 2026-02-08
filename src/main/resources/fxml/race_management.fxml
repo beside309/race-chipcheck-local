@@ -33,7 +33,7 @@
                 <TableColumn fx:id="createdTimeColumn" text="创建时间" prefWidth="200"/>
             </columns>
             <placeholder>
-                <Label text="暂无赛事，点击"新增赛事"按钮创建"
+                <Label text="暂无赛事，点击【新增赛事】按钮创建"
                        style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
             </placeholder>
         </TableView>
