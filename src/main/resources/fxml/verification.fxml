@@ -62,8 +62,12 @@
         <HBox spacing="30" alignment="CENTER_LEFT" style="-fx-padding: 15; -fx-background-color: #f5f5f5;">
             <Label fx:id="recordCountLabel" text="核验记录数: 0"
                    style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
-            <Label fx:id="athleteCountLabel" text="核验人数: 0"
-                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+            <Label fx:id="totalAthleteCountLabel" text="总人数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #666666;"/>
+            <Label fx:id="athleteCountLabel" text="已核验人数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;"/>
+            <Label fx:id="unverifiedCountLabel" text="未核验人数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #FF9800;"/>
         </HBox>
     </bottom>
 

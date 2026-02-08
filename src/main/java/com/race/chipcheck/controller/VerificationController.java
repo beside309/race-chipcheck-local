@@ -67,7 +67,13 @@ public class VerificationController {
     private Label recordCountLabel;
 
     @FXML
+    private Label totalAthleteCountLabel;
+
+    @FXML
     private Label athleteCountLabel;
+
+    @FXML
+    private Label unverifiedCountLabel;
 
     // Services
     private final DatabaseService databaseService;
@@ -138,6 +144,16 @@ public class VerificationController {
 
         // 设置VerificationService的当前赛事ID
         verificationService.setCurrentRaceId(race.getId());
+
+        // 立即更新统计信息
+        updateStatistics();
+    }
+
+    /**
+     * 刷新统计数据（供外部调用，如选手列表变化时）
+     */
+    public void refreshStatistics() {
+        updateStatistics();
     }
 
     /**
@@ -220,7 +236,10 @@ public class VerificationController {
             public void onTagRead(String epc) {
                 logger.info("读取到芯片：{}", epc);
                 verificationService.processChip(epc);
-                updateStatistics();
+                // 在Platform.runLater中更新统计，确保记录已添加
+                javafx.application.Platform.runLater(() -> {
+                    updateStatistics();
+                });
             }
 
             @Override
@@ -254,8 +273,14 @@ public class VerificationController {
      * 更新统计信息
      */
     private void updateStatistics() {
+        int totalCount = verificationService.getTotalAthleteCount();
+        int verifiedCount = verificationService.getVerifiedAthleteCount();
+        int unverifiedCount = totalCount - verifiedCount;
+
         recordCountLabel.setText("核验记录数: " + verificationService.getTotalRecordCount());
-        athleteCountLabel.setText("核验人数: " + verificationService.getVerifiedAthleteCount());
+        totalAthleteCountLabel.setText("总人数: " + totalCount);
+        athleteCountLabel.setText("已核验人数: " + verifiedCount);
+        unverifiedCountLabel.setText("未核验人数: " + unverifiedCount);
     }
 
     /**
@@ -282,8 +307,10 @@ public class VerificationController {
         // 清空输入框
         testChipIdField.clear();
 
-        // 更新统计
-        updateStatistics();
+        // 在Platform.runLater中更新统计，确保记录已添加
+        javafx.application.Platform.runLater(() -> {
+            updateStatistics();
+        });
     }
 
     /**

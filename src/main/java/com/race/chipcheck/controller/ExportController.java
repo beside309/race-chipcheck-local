@@ -26,6 +26,9 @@ public class ExportController {
     private Button exportButton;
 
     @FXML
+    private Button exportUnverifiedButton;
+
+    @FXML
     private Label infoLabel;
 
     // Services
@@ -96,6 +99,49 @@ public class ExportController {
             } catch (Exception e) {
                 AlertHelper.showError("导出失败", "导出失败：" + e.getMessage());
                 logger.error("导出失败", e);
+            }
+        }
+    }
+
+    /**
+     * 导出未核验选手名单
+     */
+    @FXML
+    private void handleExportUnverified() {
+        if (currentRace == null) {
+            AlertHelper.showWarning("未选择赛事", "请先选择赛事");
+            return;
+        }
+
+        // 文件选择对话框
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("保存未核验选手名单");
+        fileChooser.setInitialFileName(
+            DataExportService.generateUnverifiedExportFileName(currentRace.getName())
+        );
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("Excel文件", "*.xlsx")
+        );
+
+        File file = fileChooser.showSaveDialog(exportUnverifiedButton.getScene().getWindow());
+        if (file != null) {
+            try {
+                dataExportService.exportUnverifiedAthletes(
+                    currentRace.getId(),
+                    currentRace.getName(),
+                    file
+                );
+
+                AlertHelper.showInfo(
+                    "导出成功",
+                    "未核验选手名单已导出到：\n" + file.getAbsolutePath()
+                );
+
+                logger.info("导出未核验选手名单成功：{}", file.getAbsolutePath());
+
+            } catch (Exception e) {
+                AlertHelper.showError("导出失败", "导出失败：" + e.getMessage());
+                logger.error("导出未核验选手名单失败", e);
             }
         }
     }

@@ -77,6 +77,9 @@ public class AthleteManagementController {
     // 当前赛事
     private Race currentRace;
 
+    // 主控制器引用（用于通知其他Controller）
+    private MainController mainController;
+
     public AthleteManagementController() {
         this.databaseService = DatabaseService.getInstance();
         this.raceService = new RaceService(databaseService);
@@ -103,6 +106,13 @@ public class AthleteManagementController {
 
         // 加载选手列表
         loadAthletes(race.getId());
+    }
+
+    /**
+     * 设置主控制器引用
+     */
+    public void setMainController(MainController mainController) {
+        this.mainController = mainController;
     }
 
     /**
@@ -182,6 +192,9 @@ public class AthleteManagementController {
         athletes.addAll(athleteList);
         updateAthleteCount();
         logger.info("加载 {} 个选手", athleteList.size());
+
+        // 通知芯片核验页面刷新统计
+        notifyAthleteListChanged();
     }
 
     /**
@@ -189,6 +202,15 @@ public class AthleteManagementController {
      */
     private void updateAthleteCount() {
         athleteCountLabel.setText("选手数量: " + athletes.size());
+    }
+
+    /**
+     * 通知芯片核验页面刷新统计数据
+     */
+    private void notifyAthleteListChanged() {
+        if (mainController != null) {
+            mainController.notifyAthleteListChanged();
+        }
     }
 
     /**
@@ -281,6 +303,7 @@ public class AthleteManagementController {
             athleteService.createAthlete(athlete);
             athletes.add(athlete);
             updateAthleteCount();
+            notifyAthleteListChanged();  // 通知芯片核验页面
             AlertHelper.showInfo("成功", "已添加新选手，请双击单元格进行编辑");
         } catch (Exception e) {
             AlertHelper.showError("添加失败", "添加选手失败：" + e.getMessage());
@@ -309,6 +332,7 @@ public class AthleteManagementController {
                 athleteService.deleteAthlete(selectedAthlete.getId());
                 athletes.remove(selectedAthlete);
                 updateAthleteCount();
+                notifyAthleteListChanged();  // 通知芯片核验页面
                 AlertHelper.showInfo("成功", "选手删除成功");
             } catch (Exception e) {
                 AlertHelper.showError("删除失败", "删除选手失败：" + e.getMessage());

@@ -148,6 +148,16 @@ public class VerificationService {
     }
 
     /**
+     * 获取总人数（当前赛事的选手总数）
+     */
+    public int getTotalAthleteCount() {
+        if (currentRaceId == null) {
+            return 0;
+        }
+        return athleteService.getAthleteCountByRaceId(currentRaceId);
+    }
+
+    /**
      * 获取核验人数（去重后的参赛号数量）
      */
     public int getVerifiedAthleteCount() {
@@ -155,10 +165,10 @@ public class VerificationService {
     }
 
     /**
-     * 清空记录
+     * 清空记录（仅清空记录列表，不清空核验人数统计）
      */
     public void clearRecords() {
         records.clear();
-        verifiedBibNumbers.clear();
+        // 不清空verifiedBibNumbers，让核验人数继续累计
     }
 }

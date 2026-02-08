@@ -17,10 +17,6 @@
                         style="-fx-font-size: 14px; -fx-background-color: white; -fx-text-fill: #2196F3; -fx-padding: 8 20;"/>
 
                 <VBox spacing="5">
-                    <HBox spacing="15" alignment="BASELINE_LEFT">
-                        <Label text="赛事选手芯片核验系统" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                        <Label text="v1.0.0" style="-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.7);"/>
-                    </HBox>
                     <Label fx:id="raceNameLabel" text="当前赛事：" style="-fx-font-size: 16px; -fx-text-fill: white;"/>
                 </VBox>
             </HBox>

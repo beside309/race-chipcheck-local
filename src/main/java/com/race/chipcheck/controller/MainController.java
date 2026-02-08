@@ -87,6 +87,7 @@ public class MainController {
             BorderPane athleteContent = (BorderPane) athleteManagementTab.getContent();
             if (athleteContent != null && athleteContent.getUserData() instanceof AthleteManagementController) {
                 AthleteManagementController controller = (AthleteManagementController) athleteContent.getUserData();
+                controller.setMainController(this);  // 设置MainController引用
                 controller.setCurrentRace(race);
             }
 
@@ -105,6 +106,22 @@ public class MainController {
             }
         } catch (Exception e) {
             logger.error("通知子Controller失败", e);
+        }
+    }
+
+    /**
+     * 通知VerificationController刷新统计数据（选手列表变化时调用）
+     */
+    public void notifyAthleteListChanged() {
+        try {
+            BorderPane verificationContent = (BorderPane) verificationTab.getContent();
+            if (verificationContent != null && verificationContent.getUserData() instanceof VerificationController) {
+                VerificationController controller = (VerificationController) verificationContent.getUserData();
+                controller.refreshStatistics();
+                logger.debug("已通知芯片核验页面刷新统计数据");
+            }
+        } catch (Exception e) {
+            logger.error("通知芯片核验页面失败", e);
         }
     }
 

@@ -12,14 +12,6 @@
     <!-- 顶部：标题和操作按钮 -->
     <top>
         <VBox spacing="10" style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <VBox spacing="5">
-                    <Label text="赛事选手芯片核验系统"
-                           style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
-                    <Label text="版本 1.0.0"
-                           style="-fx-font-size: 14px; -fx-text-fill: #999;"/>
-                </VBox>
-            </HBox>
             <Label text="请选择或创建赛事"
                    style="-fx-font-size: 16px; -fx-text-fill: #666;"/>
 

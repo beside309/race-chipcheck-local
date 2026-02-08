@@ -1,5 +1,6 @@
 package com.race.chipcheck.service;
 
+import com.race.chipcheck.model.Athlete;
 import com.race.chipcheck.model.VerificationRecord;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -16,7 +17,9 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 数据导出服务
@@ -136,5 +139,134 @@ public class DataExportService {
     public static String generateExportFileName(String raceName) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return "芯片核验记录" + raceName + timestamp + ".xlsx";
+    }
+
+    /**
+     * 生成未核验选手导出文件名
+     * 格式：未核验选手名单+赛事名称+导出时间(YYYYMMDDHHMMSS).xlsx
+     */
+    public static String generateUnverifiedExportFileName(String raceName) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return "未核验选手名单" + raceName + timestamp + ".xlsx";
+    }
+
+    /**
+     * 导出未核验选手名单
+     * 文件名格式：未核验选手名单+赛事名称+导出时间(YYYYMMDDHHMMSS).xlsx
+     */
+    public void exportUnverifiedAthletes(Long raceId, String raceName, File outputFile) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("未核验选手");
+
+        // 创建表头样式
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+
+        // 创建表头
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"参赛号", "姓名", "芯片1", "芯片2", "芯片3", "芯片4"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // 获取未核验选手列表
+        List<Athlete> unverifiedAthletes = getUnverifiedAthletes(raceId);
+
+        // 填充数据
+        for (int i = 0; i < unverifiedAthletes.size(); i++) {
+            Row row = sheet.createRow(i + 1);
+            Athlete athlete = unverifiedAthletes.get(i);
+
+            row.createCell(0).setCellValue(athlete.getBibNumber());
+            row.createCell(1).setCellValue(athlete.getName());
+            row.createCell(2).setCellValue(athlete.getChip1() != null ? athlete.getChip1() : "");
+            row.createCell(3).setCellValue(athlete.getChip2() != null ? athlete.getChip2() : "");
+            row.createCell(4).setCellValue(athlete.getChip3() != null ? athlete.getChip3() : "");
+            row.createCell(5).setCellValue(athlete.getChip4() != null ? athlete.getChip4() : "");
+        }
+
+        // 自动调整列宽
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // 写入文件
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+            workbook.write(fos);
+        }
+        workbook.close();
+
+        logger.info("导出 {} 个未核验选手到文件：{}", unverifiedAthletes.size(), outputFile.getName());
+    }
+
+    /**
+     * 获取未核验选手列表
+     * 逻辑：查询所有选手，排除已核验成功的选手
+     */
+    private List<Athlete> getUnverifiedAthletes(Long raceId) {
+        List<Athlete> unverifiedAthletes = new ArrayList<>();
+
+        // 1. 获取所有已核验成功的参赛号（去重）
+        Set<String> verifiedBibNumbers = new HashSet<>();
+        String verifiedSql = "SELECT DISTINCT bib_number FROM verification_records " +
+                           "WHERE race_id = ? AND status = '成功'";
+
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(verifiedSql)) {
+            stmt.setLong(1, raceId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    verifiedBibNumbers.add(rs.getString("bib_number"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("查询已核验参赛号失败：赛事ID={}", raceId, e);
+        }
+
+        logger.info("赛事ID={} 已核验参赛号数量：{}", raceId, verifiedBibNumbers.size());
+
+        // 2. 获取所有选手
+        String athletesSql = "SELECT * FROM athletes WHERE race_id = ? ORDER BY bib_number";
+
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(athletesSql)) {
+            stmt.setLong(1, raceId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Athlete athlete = mapResultSetToAthlete(rs);
+
+                    // 如果该选手的参赛号不在已核验列表中，则为未核验选手
+                    if (!verifiedBibNumbers.contains(athlete.getBibNumber())) {
+                        unverifiedAthletes.add(athlete);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("查询选手列表失败：赛事ID={}", raceId, e);
+        }
+
+        logger.info("赛事ID={} 未核验选手数量：{}", raceId, unverifiedAthletes.size());
+
+        return unverifiedAthletes;
+    }
+
+    /**
+     * 将ResultSet映射为Athlete对象
+     */
+    private Athlete mapResultSetToAthlete(ResultSet rs) throws SQLException {
+        Long id = rs.getLong("id");
+        Long raceId = rs.getLong("race_id");
+        String bibNumber = rs.getString("bib_number");
+        String name = rs.getString("name");
+        String chip1 = rs.getString("chip1");
+        String chip2 = rs.getString("chip2");
+        String chip3 = rs.getString("chip3");
+        String chip4 = rs.getString("chip4");
+
+        return new Athlete(id, raceId, bibNumber, name, chip1, chip2, chip3, chip4);
     }
 }
