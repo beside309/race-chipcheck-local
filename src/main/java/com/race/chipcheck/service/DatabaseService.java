@@ -17,8 +17,19 @@ public class DatabaseService {
 
     private Connection connection;
     private static DatabaseService instance;
+    private final String dbUrl;
 
     private DatabaseService() {
+        this.dbUrl = DB_URL;
+        initializeDatabase();
+    }
+
+    /**
+     * 测试专用构造函数（包可见性）
+     * @param dbUrl 数据库URL（如":memory:"用于内存数据库测试）
+     */
+    DatabaseService(String dbUrl) {
+        this.dbUrl = "jdbc:sqlite:" + dbUrl;
         initializeDatabase();
     }
 
@@ -38,8 +49,13 @@ public class DatabaseService {
             Class.forName("org.sqlite.JDBC");
 
             // 建立连接
-            connection = DriverManager.getConnection(DB_URL);
-            logger.info("数据库连接成功：{}", DB_URL);
+            connection = DriverManager.getConnection(dbUrl);
+            logger.info("数据库连接成功：{}", dbUrl);
+
+            // 启用外键约束
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
 
             // 创建表结构
             createTables();
@@ -116,7 +132,7 @@ public class DatabaseService {
     public Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {
-                connection = DriverManager.getConnection(DB_URL);
+                connection = DriverManager.getConnection(dbUrl);
             }
         } catch (SQLException e) {
             logger.error("获取数据库连接失败", e);
