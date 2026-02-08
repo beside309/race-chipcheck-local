@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 芯片核验控制器
@@ -216,13 +217,30 @@ public class VerificationController {
             rfidReaderService.disconnect();
             connectButton.setText("连接读卡器");
         } else {
-            // 连接读卡器
-            // 默认使用COM3端口，波特率115200
-            boolean success = rfidReaderService.connect("COM3", 115200);
-            if (success) {
-                connectButton.setText("断开连接");
-            } else {
-                AlertHelper.showError("连接失败", "无法连接到读卡器，请检查设备是否连接并选择正确的端口。");
+            // 获取可用串口列表
+            List<String> availablePorts = RfidReaderService.getAvailablePorts();
+
+            if (availablePorts.isEmpty()) {
+                AlertHelper.showWarning("无可用串口", "未检测到可用的串口，请检查读卡器是否已连接。");
+                return;
+            }
+
+            // 显示端口选择对话框
+            ChoiceDialog<String> dialog = new ChoiceDialog<>(availablePorts.get(0), availablePorts);
+            dialog.setTitle("选择串口");
+            dialog.setHeaderText("请选择读卡器所在的串口");
+            dialog.setContentText("串口：");
+
+            Optional<String> result = dialog.showAndWait();
+            if (result.isPresent()) {
+                String selectedPort = result.get();
+                // 连接读卡器，默认波特率115200
+                boolean success = rfidReaderService.connect(selectedPort, 115200);
+                if (success) {
+                    connectButton.setText("断开连接");
+                } else {
+                    AlertHelper.showError("连接失败", "无法连接到读卡器端口：" + selectedPort);
+                }
             }
         }
     }

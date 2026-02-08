@@ -1,10 +1,12 @@
 package com.race.chipcheck.service;
 
+import com.fazecast.jSerialComm.SerialPort;
 import com.race.chipcheck.transport.JSerialCommTransport;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -32,6 +34,21 @@ public class RfidReaderService {
      */
     public void addListener(TagReadListener listener) {
         listeners.add(listener);
+    }
+
+    /**
+     * 获取系统可用的串口列表
+     */
+    public static List<String> getAvailablePorts() {
+        List<String> portList = new ArrayList<>();
+        SerialPort[] ports = SerialPort.getCommPorts();
+
+        for (SerialPort port : ports) {
+            portList.add(port.getSystemPortName());
+        }
+
+        logger.info("检测到 {} 个可用串口", portList.size());
+        return portList;
     }
 
     /**

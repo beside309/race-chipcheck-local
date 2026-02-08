@@ -14,9 +14,16 @@ import java.util.Optional;
  */
 public class AlertHelper {
 
+    public static final String APP_VERSION = "v1.0.0";
+
+    public static final String APP_NAME = "赛事选手芯片核验系统";
+
+    
+    
     /**
      * 显示信息提示
      */
+
     public static void showInfo(String title, String message) {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle(title);

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -63,6 +64,18 @@ public class AthleteManagementController {
     @FXML
     private Label athleteCountLabel;
 
+    @FXML
+    private TextField searchField;
+
+    @FXML
+    private Button searchButton;
+
+    @FXML
+    private Button clearSearchButton;
+
+    @FXML
+    private Label searchResultLabel;
+
     // Services
     private final DatabaseService databaseService;
     private final RaceService raceService;
@@ -73,6 +86,7 @@ public class AthleteManagementController {
 
     // 数据
     private final ObservableList<Athlete> athletes = FXCollections.observableArrayList();
+    private List<Athlete> allAthletes = new ArrayList<>();  // 保存所有选手，用于搜索
 
     // 当前赛事
     private Race currentRace;
@@ -95,6 +109,16 @@ public class AthleteManagementController {
 
         // 初始化TableView
         setupTableView();
+
+        // 设置搜索框回车键支持
+        setupSearchFieldEnterKey();
+    }
+
+    /**
+     * 设置搜索框回车键支持
+     */
+    private void setupSearchFieldEnterKey() {
+        searchField.setOnAction(event -> handleSearch());
     }
 
     /**
@@ -189,9 +213,14 @@ public class AthleteManagementController {
     private void loadAthletes(Long raceId) {
         athletes.clear();
         List<Athlete> athleteList = athleteService.getAthletesByRaceId(raceId);
+        allAthletes = new ArrayList<>(athleteList);  // 保存所有选手
         athletes.addAll(athleteList);
         updateAthleteCount();
         logger.info("加载 {} 个选手", athleteList.size());
+
+        // 清空搜索框和搜索结果
+        searchField.clear();
+        searchResultLabel.setText("");
 
         // 通知芯片核验页面刷新统计
         notifyAthleteListChanged();
@@ -350,5 +379,68 @@ public class AthleteManagementController {
             loadAthletes(currentRace.getId());
             AlertHelper.showInfo("刷新成功", "选手列表已刷新");
         }
+    }
+
+    /**
+     * 搜索选手
+     */
+    @FXML
+    private void handleSearch() {
+        String keyword = searchField.getText();
+        if (keyword == null || keyword.trim().isEmpty()) {
+            AlertHelper.showWarning("输入错误", "请输入搜索关键词");
+            return;
+        }
+
+        keyword = keyword.trim().toLowerCase();
+
+        // 在所有选手中搜索
+        List<Athlete> searchResults = new ArrayList<>();
+        for (Athlete athlete : allAthletes) {
+            // 按参赛号、姓名、芯片1-4搜索
+            if (matchKeyword(athlete.getBibNumber(), keyword) ||
+                matchKeyword(athlete.getName(), keyword) ||
+                matchKeyword(athlete.getChip1(), keyword) ||
+                matchKeyword(athlete.getChip2(), keyword) ||
+                matchKeyword(athlete.getChip3(), keyword) ||
+                matchKeyword(athlete.getChip4(), keyword)) {
+                searchResults.add(athlete);
+            }
+        }
+
+        // 更新显示
+        athletes.clear();
+        athletes.addAll(searchResults);
+        updateAthleteCount();
+
+        // 显示搜索结果
+        searchResultLabel.setText("找到 " + searchResults.size() + " 个匹配结果");
+        logger.info("搜索关键词：{}，找到 {} 个结果", keyword, searchResults.size());
+    }
+
+    /**
+     * 清空搜索
+     */
+    @FXML
+    private void handleClearSearch() {
+        searchField.clear();
+        searchResultLabel.setText("");
+
+        // 恢复显示所有选手
+        athletes.clear();
+        athletes.addAll(allAthletes);
+        updateAthleteCount();
+
+        logger.info("清空搜索，恢复显示所有选手");
+    }
+
+    /**
+     * 匹配关键词（不区分大小写）
+     */
+    private boolean matchKeyword(String value, String keyword) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        return value.toLowerCase().contains(keyword);
     }
 }

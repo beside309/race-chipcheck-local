@@ -36,6 +36,19 @@
                 <Button fx:id="refreshButton" text="刷新" onAction="#handleRefresh"
                         style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
             </HBox>
+
+            <!-- 搜索行 -->
+            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #fffbf0; -fx-border-color: #ffd700; -fx-border-radius: 5;">
+                <Label text="搜索：" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                <TextField fx:id="searchField" promptText="输入参赛号、姓名或芯片号查询" prefWidth="300"
+                           style="-fx-font-size: 14px;"/>
+                <Button fx:id="searchButton" text="搜索" onAction="#handleSearch"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20; -fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+                <Button fx:id="clearSearchButton" text="清空" onAction="#handleClearSearch"
+                        style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
+                <Label fx:id="searchResultLabel" text=""
+                       style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+            </HBox>
         </VBox>
     </top>
 

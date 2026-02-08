@@ -14,7 +14,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.race.chipcheck.util.AlertHelper;
 import java.io.IOException;
 
 /**
@@ -157,7 +157,7 @@ public class MainController {
             // 获取当前Stage并切换场景
             Stage stage = (Stage) backButton.getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setTitle("赛事选手芯片核验系统");
+            stage.setTitle(AlertHelper.APP_NAME + " " + AlertHelper.APP_VERSION);
 
         } catch (Exception e) {
             logger.error("返回赛事选择页面失败", e);

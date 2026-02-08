@@ -251,7 +251,7 @@ public class RaceSelectionController {
             // 获取当前Stage并切换场景
             Stage stage = (Stage) raceTable.getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setTitle("赛事选手芯片核验系统 - " + selectedRace.getName());
+            stage.setTitle(AlertHelper.APP_NAME + " " + AlertHelper.APP_VERSION + " - " + selectedRace.getName());
 
         } catch (Exception e) {
             logger.error("进入赛事失败", e);

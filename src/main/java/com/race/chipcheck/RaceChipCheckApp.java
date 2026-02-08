@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.race.chipcheck.util.AlertHelper;
 
 /**
  * JavaFX应用主入口
@@ -36,10 +37,10 @@ public class RaceChipCheckApp extends Application {
             }
 
             // 设置舞台
-            primaryStage.setTitle("赛事选手芯片核验系统");
+            primaryStage.setTitle(AlertHelper.APP_NAME + " " + AlertHelper.APP_VERSION);
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(1200);
-            primaryStage.setMinHeight(700);
+            primaryStage.setMinHeight(700); 
             primaryStage.show();
 
             logger.info("应用启动成功");
