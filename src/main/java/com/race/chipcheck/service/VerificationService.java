@@ -42,8 +42,39 @@ public class VerificationService {
      */
     public void setCurrentRaceId(Long raceId) {
         this.currentRaceId = raceId;
-        // 清空统计数据
+        // 从数据库加载历史核验记录，恢复已核验人数统计
+        loadVerifiedBibNumbersFromDatabase();
+    }
+
+    /**
+     * 从数据库加载已核验的参赛号（用于恢复统计）
+     */
+    private void loadVerifiedBibNumbersFromDatabase() {
         verifiedBibNumbers.clear();
+
+        if (currentRaceId == null) {
+            return;
+        }
+
+        String sql = "SELECT DISTINCT bib_number FROM verification_records WHERE race_id = ? AND status = '成功'";
+
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql)) {
+            stmt.setLong(1, currentRaceId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String bibNumber = rs.getString("bib_number");
+                    if (bibNumber != null && !bibNumber.isEmpty()) {
+                        verifiedBibNumbers.add(bibNumber);
+                    }
+                }
+            }
+
+            logger.info("从历史记录中恢复核验统计：已核验 {} 人", verifiedBibNumbers.size());
+
+        } catch (SQLException e) {
+            logger.error("加载历史核验记录失败", e);
+        }
     }
 
     /**
