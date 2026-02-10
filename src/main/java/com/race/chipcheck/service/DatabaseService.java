@@ -1,10 +1,17 @@
 package com.race.chipcheck.service;
 
+import com.race.chipcheck.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -13,7 +20,7 @@ import java.sql.Statement;
  */
 public class DatabaseService {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseService.class);
-    private static final String DB_URL = "jdbc:sqlite:race-chipcheck.db";
+    private static final String DB_URL = "jdbc:sqlite:" + AppConfig.getDatabasePath();
 
     private Connection connection;
     private static DatabaseService instance;
@@ -45,6 +52,9 @@ public class DatabaseService {
      */
     private void initializeDatabase() {
         try {
+            // 首次启动迁移检查
+            performMigrationIfNeeded();
+
             // 加载SQLite JDBC驱动
             Class.forName("org.sqlite.JDBC");
 
@@ -116,6 +126,23 @@ public class DatabaseService {
                 )
             """);
 
+            // 创建配置表
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
+            // 插入默认配置
+            stmt.execute("""
+                INSERT OR IGNORE INTO app_settings (key, value) VALUES
+                    ('voice_enabled', 'true'),
+                    ('voice_content', 'BIB_NUMBER'),
+                    ('alert_sound_enabled', 'true')
+            """);
+
             // 创建索引
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_race_id ON athletes(race_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chips ON athletes(chip1, chip2, chip3, chip4)");
@@ -142,6 +169,22 @@ public class DatabaseService {
     }
 
     /**
+     * 删除指定赛事的所有核验记录
+     * @param raceId 赛事ID
+     * @return 删除的记录数
+     */
+    public int deleteVerificationRecordsByRaceId(Long raceId) throws SQLException {
+        String sql = "DELETE FROM verification_records WHERE race_id = ?";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setLong(1, raceId);
+            int deletedCount = stmt.executeUpdate();
+            logger.info("删除赛事 {} 的核验记录：{} 条", raceId, deletedCount);
+            return deletedCount;
+        }
+    }
+
+    /**
      * 关闭数据库连接
      */
     public void close() {
@@ -152,6 +195,47 @@ public class DatabaseService {
             }
         } catch (SQLException e) {
             logger.error("关闭数据库连接失败", e);
+        }
+    }
+
+    /**
+     * 迁移旧数据库到新位置（如果需要）
+     * 仅在首次启动时执行，检测旧位置的数据库并复制到用户目录
+     */
+    private void performMigrationIfNeeded() {
+        Path newDbPath = Paths.get(AppConfig.getDatabasePath());
+
+        // 如果新位置已有数据库，跳过迁移
+        if (Files.exists(newDbPath)) {
+            logger.info("数据库已存在于用户目录：{}", newDbPath);
+            return;
+        }
+
+        // 检查旧位置是否有数据库
+        Path oldDbPath = Paths.get("race-chipcheck.db");
+        if (!Files.exists(oldDbPath)) {
+            logger.info("首次启动，将在用户目录创建新数据库");
+            return;
+        }
+
+        // 执行迁移
+        try {
+            logger.info("检测到旧数据库，开始迁移...");
+            logger.info("源文件：{}", oldDbPath.toAbsolutePath());
+            logger.info("目标文件：{}", newDbPath.toAbsolutePath());
+
+            // 确保目标目录存在
+            Files.createDirectories(newDbPath.getParent());
+
+            // 复制文件（而非移动，保留备份）
+            Files.copy(oldDbPath, newDbPath, StandardCopyOption.REPLACE_EXISTING);
+
+            logger.info("数据库迁移成功！");
+            logger.info("提示：原数据库文件保留在安装目录，可手动删除");
+
+        } catch (IOException e) {
+            logger.error("数据库迁移失败", e);
+            throw new RuntimeException("数据库迁移失败：" + e.getMessage(), e);
         }
     }
 }

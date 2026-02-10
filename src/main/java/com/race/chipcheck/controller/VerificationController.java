@@ -2,6 +2,7 @@ package com.race.chipcheck.controller;
 
 import com.race.chipcheck.model.Race;
 import com.race.chipcheck.model.VerificationRecord;
+import com.race.chipcheck.model.VoiceContentType;
 import com.race.chipcheck.service.*;
 import com.race.chipcheck.util.AlertHelper;
 import javafx.collections.FXCollections;
@@ -59,6 +60,9 @@ public class VerificationController {
     private Button clearButton;
 
     @FXML
+    private Button clearStatisticsButton;
+
+    @FXML
     private TextField testChipIdField;
 
     @FXML
@@ -76,11 +80,25 @@ public class VerificationController {
     @FXML
     private Label unverifiedCountLabel;
 
+    @FXML
+    private CheckBox voiceEnabledCheckbox;
+
+    @FXML
+    private RadioButton voiceContentBibRadio;
+
+    @FXML
+    private RadioButton voiceContentNameRadio;
+
+    @FXML
+    private CheckBox alertSoundCheckbox;
+
     // Services
     private final DatabaseService databaseService;
     private final RaceService raceService;
     private final AthleteService athleteService;
+    private final PreferenceService preferenceService;
     private final AlertSoundService alertSoundService;
+    private final TTSService ttsService;
     private final RfidReaderService rfidReaderService;
     private final RaceListManager raceListManager;
     private VerificationService verificationService;
@@ -96,7 +114,9 @@ public class VerificationController {
         this.databaseService = DatabaseService.getInstance();
         this.raceService = new RaceService(databaseService);
         this.athleteService = new AthleteService(databaseService);
-        this.alertSoundService = new AlertSoundService();
+        this.preferenceService = new PreferenceService(databaseService);
+        this.alertSoundService = new AlertSoundService(preferenceService);
+        this.ttsService = new TTSService(preferenceService);
         this.rfidReaderService = new RfidReaderService();
         this.raceListManager = RaceListManager.getInstance();
     }
@@ -110,6 +130,8 @@ public class VerificationController {
             athleteService,
             databaseService,
             alertSoundService,
+            ttsService,
+            preferenceService,
             records
         );
 
@@ -127,6 +149,15 @@ public class VerificationController {
 
         // 设置测试输入框回车键支持
         setupTestFieldEnterKey();
+
+        // 设置清空按钮右键菜单
+        setupClearButtonContextMenu();
+
+        // 初始化配置UI
+        setupPreferences();
+
+        // 预热 TTS 系统（在后台完成，避免首次使用时延迟）
+        ttsService.warmup();
     }
 
     /**
@@ -341,5 +372,127 @@ public class VerificationController {
             updateStatistics();
             logger.info("清空核验记录");
         }
+    }
+
+    /**
+     * 设置清空按钮右键菜单
+     */
+    private void setupClearButtonContextMenu() {
+        ContextMenu contextMenu = new ContextMenu();
+
+        MenuItem clearDisplayItem = new MenuItem("清空显示记录");
+        clearDisplayItem.setOnAction(event -> handleClear());
+
+        MenuItem clearStatisticsItem = new MenuItem("清空核验统计");
+        clearStatisticsItem.setOnAction(event -> handleClearStatistics());
+
+        contextMenu.getItems().addAll(clearDisplayItem, clearStatisticsItem);
+
+        // 右键显示菜单
+        clearButton.setOnContextMenuRequested(event -> {
+            contextMenu.show(clearButton, event.getScreenX(), event.getScreenY());
+        });
+    }
+
+    /**
+     * 清空核验统计（核验人数归0 + 删除数据库记录）
+     */
+    @FXML
+    private void handleClearStatistics() {
+        if (currentRace == null) {
+            AlertHelper.showWarning("未选择赛事", "请先选择赛事");
+            return;
+        }
+
+        // 构建详细的确认信息
+        String confirmMessage = String.format(
+            "此操作将：\n" +
+            "1. 清空核验人数统计（当前：%d 人）\n" +
+            "2. 删除当前赛事的所有核验记录（当前：%d 条）\n" +
+            "3. 清空显示界面\n\n" +
+            "此操作不可恢复，确定要继续吗？",
+            verificationService.getVerifiedAthleteCount(),
+            verificationService.getTotalRecordCount()
+        );
+
+        if (AlertHelper.showConfirm("确认清空核验统计", confirmMessage)) {
+            try {
+                verificationService.clearVerificationStatistics();
+                updateStatistics();
+                logger.info("清空核验统计成功");
+                AlertHelper.showInfo("操作成功", "核验统计已清空");
+            } catch (Exception e) {
+                logger.error("清空核验统计失败", e);
+                AlertHelper.showError("操作失败", "清空核验统计失败：" + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 初始化配置UI
+     */
+    private void setupPreferences() {
+        // RadioButton 分组
+        ToggleGroup voiceContentGroup = new ToggleGroup();
+        voiceContentBibRadio.setToggleGroup(voiceContentGroup);
+        voiceContentNameRadio.setToggleGroup(voiceContentGroup);
+
+        // 加载配置到 UI
+        loadPreferences();
+
+        // 监听 UI 变化并保存配置
+        setupPreferenceListeners();
+    }
+
+    /**
+     * 加载配置到UI
+     */
+    private void loadPreferences() {
+        voiceEnabledCheckbox.setSelected(preferenceService.isVoiceEnabled());
+        alertSoundCheckbox.setSelected(preferenceService.isAlertSoundEnabled());
+
+        VoiceContentType contentType = preferenceService.getVoiceContent();
+        if (contentType == VoiceContentType.NAME) {
+            voiceContentNameRadio.setSelected(true);
+        } else {
+            voiceContentBibRadio.setSelected(true);
+        }
+
+        logger.info("配置加载完成：语音={}, 报警={}, 播报内容={}",
+            preferenceService.isVoiceEnabled(),
+            preferenceService.isAlertSoundEnabled(),
+            contentType);
+    }
+
+    /**
+     * 设置配置监听器
+     */
+    private void setupPreferenceListeners() {
+        // 语音播报开关
+        voiceEnabledCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            preferenceService.setVoiceEnabled(newVal);
+            logger.info("语音播报已{}", newVal ? "启用" : "禁用");
+        });
+
+        // 播报内容切换
+        voiceContentBibRadio.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                preferenceService.setVoiceContent(VoiceContentType.BIB_NUMBER);
+                logger.info("播报内容切换为：号码布");
+            }
+        });
+
+        voiceContentNameRadio.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                preferenceService.setVoiceContent(VoiceContentType.NAME);
+                logger.info("播报内容切换为：姓名");
+            }
+        });
+
+        // 报警声音开关
+        alertSoundCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            preferenceService.setAlertSoundEnabled(newVal);
+            logger.info("报警声音已{}", newVal ? "启用" : "禁用");
+        });
     }
 }

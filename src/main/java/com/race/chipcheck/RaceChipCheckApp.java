@@ -1,5 +1,6 @@
 package com.race.chipcheck;
 
+import com.race.chipcheck.config.AppConfig;
 import com.race.chipcheck.service.RaceListManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -19,6 +20,12 @@ public class RaceChipCheckApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
+            // 确保AppConfig先初始化（设置系统属性给logback使用）
+            String dataDir = AppConfig.getUserDataDirectory();
+            logger.info("应用数据目录：{}", dataDir);
+            logger.info("数据库路径：{}", AppConfig.getDatabasePath());
+            logger.info("日志目录：{}", AppConfig.getLogsDirectory());
+
             // 初始化共享赛事列表
             RaceListManager.getInstance().refreshRaces();
 

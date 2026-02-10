@@ -127,11 +127,11 @@ mvn clean package -DskipTests
 jpackage ^
   --input target ^
   --name "RaceChipCheck" ^
-  --main-jar race-chipcheck-1.0.0.jar ^
+  --main-jar race-chipcheck-1.0.1.jar ^
   --main-class com.race.chipcheck.RaceChipCheckApp ^
   --type exe ^
   --dest installer\output ^
-  --app-version 1.0.0 ^
+  --app-version 1.0.1 ^
   --description "赛事选手芯片核验系统脱机版" ^
   --vendor "Race Systems" ^
   --win-dir-chooser ^
@@ -140,7 +140,7 @@ jpackage ^
 ```
 
 ### 打包产物
-- **文件名**: RaceChipCheck-1.0.0.exe
+- **文件名**: RaceChipCheck-1.0.1.exe
 - **位置**: installer/output/
 - **大小**: 约200-300MB（包含Java运行时）
 - **特性**:
@@ -152,7 +152,7 @@ jpackage ^
 
 ### 当前构建状态
 - ✓ Maven编译成功
-- ✓ JAR文件已生成：target/race-chipcheck-1.0.0.jar
+- ✓ JAR文件已生成：target/race-chipcheck-1.0.1.jar
 - ✓ 包含所有依赖项（Shade Plugin）
 - ⏱ Windows安装程序需要运行package.bat生成
 

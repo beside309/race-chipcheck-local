@@ -14,7 +14,7 @@ import java.util.Optional;
  */
 public class AlertHelper {
 
-    public static final String APP_VERSION = "v1.0.0";
+    public static final String APP_VERSION = "v1.0.1";
 
     public static final String APP_NAME = "赛事选手芯片核验系统脱机版";
 

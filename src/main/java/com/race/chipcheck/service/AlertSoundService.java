@@ -13,8 +13,10 @@ import java.net.URL;
 public class AlertSoundService {
     private static final Logger logger = LoggerFactory.getLogger(AlertSoundService.class);
     private Clip alertClip;
+    private final PreferenceService preferenceService;
 
-    public AlertSoundService() {
+    public AlertSoundService(PreferenceService preferenceService) {
+        this.preferenceService = preferenceService;
         try {
             // 加载声音文件
             URL soundUrl = getClass().getResource("/sounds/alert.wav");
@@ -39,6 +41,12 @@ public class AlertSoundService {
      * 播放报警声音
      */
     public void playAlert() {
+        // 检查开关
+        if (!preferenceService.isAlertSoundEnabled()) {
+            logger.debug("报警声音已禁用，跳过播放");
+            return;
+        }
+
         if (alertClip != null) {
             // 重置到开始位置
             alertClip.setFramePosition(0);

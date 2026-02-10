@@ -22,6 +22,8 @@ public class VerificationService {
     private final AthleteService athleteService;
     private final DatabaseService databaseService;
     private final AlertSoundService alertSoundService;
+    private final TTSService ttsService;
+    private final PreferenceService preferenceService;
     private final ObservableList<VerificationRecord> records;
     private final Set<String> verifiedBibNumbers = new HashSet<>();  // 已核验的参赛号（去重）
 
@@ -30,10 +32,14 @@ public class VerificationService {
     public VerificationService(AthleteService athleteService,
                               DatabaseService databaseService,
                               AlertSoundService alertSoundService,
+                              TTSService ttsService,
+                              PreferenceService preferenceService,
                               ObservableList<VerificationRecord> records) {
         this.athleteService = athleteService;
         this.databaseService = databaseService;
         this.alertSoundService = alertSoundService;
+        this.ttsService = ttsService;
+        this.preferenceService = preferenceService;
         this.records = records;
     }
 
@@ -105,6 +111,9 @@ public class VerificationService {
 
             logger.info("核验成功：参赛号={}, 姓名={}, 芯片={}", athlete.getBibNumber(), athlete.getName(), chipId);
 
+            // 播报选手信息
+            ttsService.speakAthleteInfo(athlete);
+
         } else {
             // 未找到选手 - 核验失败
             record = new VerificationRecord(null, currentRaceId, null, now,
@@ -112,7 +121,7 @@ public class VerificationService {
 
             logger.warn("核验失败：芯片未绑定 (芯片={})", chipId);
 
-            // 播放报警声音
+            // 根据配置决定是否播放报警声音
             alertSoundService.playAlert();
 
             // 显示错误提示
@@ -201,5 +210,34 @@ public class VerificationService {
     public void clearRecords() {
         records.clear();
         // 不清空verifiedBibNumbers，让核验人数继续累计
+    }
+
+    /**
+     * 清空核验统计（包括内存统计、UI显示、数据库记录）
+     * 注意：这是一个破坏性操作，应配合二次确认使用
+     */
+    public void clearVerificationStatistics() {
+        if (currentRaceId == null) {
+            logger.warn("未选择赛事，无法清空核验统计");
+            return;
+        }
+
+        try {
+            // 1. 删除数据库记录（先执行，失败则不继续）
+            int deletedCount = databaseService.deleteVerificationRecordsByRaceId(currentRaceId);
+
+            // 2. 清空内存统计
+            verifiedBibNumbers.clear();
+
+            // 3. 清空UI显示
+            records.clear();
+
+            logger.info("清空赛事 {} 的核验统计成功：删除 {} 条记录，核验人数归0",
+                        currentRaceId, deletedCount);
+
+        } catch (SQLException e) {
+            logger.error("清空核验统计失败", e);
+            throw new RuntimeException("清空核验统计失败：" + e.getMessage(), e);
+        }
     }
 }

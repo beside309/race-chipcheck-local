@@ -13,7 +13,7 @@
     <!-- 顶部：控制栏 -->
     <top>
         <VBox spacing="10" style="-fx-padding: 10;">
-            <!-- 第一行：连接按钮和状态 -->
+            <!-- 第一行：连接按钮和状态 + 设置 -->
             <HBox spacing="15" alignment="CENTER_LEFT">
                 <Button fx:id="connectButton" text="连接读卡器" onAction="#handleConnect"
                         style="-fx-font-size: 14px; -fx-padding: 8 20;"/>
@@ -25,7 +25,36 @@
                 <Separator orientation="VERTICAL" prefHeight="30"/>
 
                 <Button fx:id="clearButton" text="清空记录" onAction="#handleClear"
-                        style="-fx-font-size: 13px;"/>
+                        style="-fx-font-size: 13px;">
+                    <tooltip>
+                        <Tooltip text="左键：清空显示记录&#10;右键：清空核验统计"/>
+                    </tooltip>
+                </Button>
+
+                <Button fx:id="clearStatisticsButton" text="清空核验人数" onAction="#handleClearStatistics"
+                        style="-fx-font-size: 13px;">
+                    <tooltip>
+                        <Tooltip text="清空当前赛事的核验人数统计和所有核验记录"/>
+                    </tooltip>
+                </Button>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <!-- 语音播报设置 -->
+                <VBox spacing="5">
+                    <Label text="语音播报设置" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #555;"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <CheckBox fx:id="voiceEnabledCheckbox" text="启用语音" style="-fx-font-size: 12px;"/>
+                        <Label text="播报:" style="-fx-font-size: 11px;"/>
+                        <RadioButton fx:id="voiceContentBibRadio" text="号码布" selected="true" style="-fx-font-size: 11px;"/>
+                        <RadioButton fx:id="voiceContentNameRadio" text="姓名" style="-fx-font-size: 11px;"/>
+                    </HBox>
+                </VBox>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <!-- 报警声音设置 -->
+                <CheckBox fx:id="alertSoundCheckbox" text="启用报警声音" selected="true" style="-fx-font-size: 12px;"/>
             </HBox>
 
             <!-- 第二行：核验测试 -->

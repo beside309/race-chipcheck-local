@@ -104,4 +104,59 @@ public class DatabaseServiceTest {
             assertEquals(0, rs.getInt(1));
         }
     }
+
+    @Test
+    public void testDeleteVerificationRecordsByRaceId() throws SQLException {
+        // 插入测试赛事
+        String insertRaceSql = "INSERT INTO races (name, created_time) VALUES ('测试赛事1', datetime('now'))";
+        try (Statement stmt = databaseService.getConnection().createStatement()) {
+            stmt.executeUpdate(insertRaceSql);
+        }
+
+        // 获取赛事ID
+        long raceId;
+        try (Statement stmt = databaseService.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT last_insert_rowid() as id")) {
+            assertTrue(rs.next());
+            raceId = rs.getLong("id");
+        }
+
+        // 插入测试核验记录
+        String insertRecordSql = "INSERT INTO verification_records (race_id, verification_time, chip_id, bib_number, name, status, remark) " +
+                                 "VALUES (?, datetime('now'), ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(insertRecordSql)) {
+            // 插入3条记录
+            for (int i = 1; i <= 3; i++) {
+                stmt.setLong(1, raceId);
+                stmt.setString(2, "CHIP00" + i);
+                stmt.setString(3, "A00" + i);
+                stmt.setString(4, "选手" + i);
+                stmt.setString(5, "成功");
+                stmt.setString(6, "");
+                stmt.executeUpdate();
+            }
+        }
+
+        // 验证记录已插入
+        String countBeforeSql = "SELECT COUNT(*) FROM verification_records WHERE race_id = ?";
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(countBeforeSql)) {
+            stmt.setLong(1, raceId);
+            ResultSet rs = stmt.executeQuery();
+            assertTrue(rs.next());
+            assertEquals(3, rs.getInt(1), "应该有3条核验记录");
+        }
+
+        // 删除核验记录
+        int deletedCount = databaseService.deleteVerificationRecordsByRaceId(raceId);
+        assertEquals(3, deletedCount, "应该删除3条记录");
+
+        // 验证记录已删除
+        String countAfterSql = "SELECT COUNT(*) FROM verification_records WHERE race_id = ?";
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(countAfterSql)) {
+            stmt.setLong(1, raceId);
+            ResultSet rs = stmt.executeQuery();
+            assertTrue(rs.next());
+            assertEquals(0, rs.getInt(1), "所有核验记录应该被删除");
+        }
+    }
 }
