@@ -1,6 +1,7 @@
 package com.race.chipcheck.service;
 
 import com.race.chipcheck.model.Athlete;
+import com.race.chipcheck.model.UnverifiedChip;
 import com.race.chipcheck.model.VerificationRecord;
 import com.race.chipcheck.util.AlertHelper;
 import javafx.application.Platform;
@@ -10,7 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -26,8 +29,20 @@ public class VerificationService {
     private final PreferenceService preferenceService;
     private final ObservableList<VerificationRecord> records;
     private final Set<String> verifiedBibNumbers = new HashSet<>();  // 已核验的参赛号（去重）
+    private final Set<String> verifiedChipIds = new HashSet<>();     // 已核验的芯片号（去重）
 
     private Long currentRaceId;  // 当前赛事ID
+
+    /** 核验结果回调（用于右侧面板显示参赛号、姓名） */
+    private VerificationResultCallback resultCallback;
+
+    public interface VerificationResultCallback {
+        void onResult(String chipId, String bibNumber, String name, boolean success);
+    }
+
+    public void setResultCallback(VerificationResultCallback callback) {
+        this.resultCallback = callback;
+    }
 
     public VerificationService(AthleteService athleteService,
                               DatabaseService databaseService,
@@ -53,18 +68,20 @@ public class VerificationService {
     }
 
     /**
-     * 从数据库加载已核验的参赛号（用于恢复统计）
+     * 从数据库加载已核验的参赛号和芯片号（用于恢复统计）
      */
     private void loadVerifiedBibNumbersFromDatabase() {
         verifiedBibNumbers.clear();
+        verifiedChipIds.clear();
 
         if (currentRaceId == null) {
             return;
         }
 
-        String sql = "SELECT DISTINCT bib_number FROM verification_records WHERE race_id = ? AND status = '成功'";
+        String sqlBib = "SELECT DISTINCT bib_number FROM verification_records WHERE race_id = ? AND status = '成功'";
+        String sqlChip = "SELECT DISTINCT chip_id FROM verification_records WHERE race_id = ? AND status = '成功' AND chip_id IS NOT NULL AND chip_id <> ''";
 
-        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sqlBib)) {
             stmt.setLong(1, currentRaceId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -75,11 +92,26 @@ public class VerificationService {
                     }
                 }
             }
+        } catch (SQLException e) {
+            logger.error("加载历史核验记录失败（参赛号）", e);
+        }
 
-            logger.info("从历史记录中恢复核验统计：已核验 {} 人", verifiedBibNumbers.size());
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sqlChip)) {
+            stmt.setLong(1, currentRaceId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String chipId = rs.getString("chip_id");
+                    if (chipId != null && !chipId.isEmpty()) {
+                        verifiedChipIds.add(chipId);
+                    }
+                }
+            }
+
+            logger.info("从历史记录中恢复核验统计：已核验人数 {}，已核验芯片数 {}", verifiedBibNumbers.size(), verifiedChipIds.size());
 
         } catch (SQLException e) {
-            logger.error("加载历史核验记录失败", e);
+            logger.error("加载历史核验记录失败（芯片号）", e);
         }
     }
 
@@ -106,8 +138,11 @@ public class VerificationService {
             record = new VerificationRecord(null, currentRaceId, athlete.getId(), now,
                 chipId, athlete.getBibNumber(), athlete.getName(), "成功", "");
 
-            // 记录已核验的参赛号（用于统计核验人数）
+            // 记录已核验的参赛号和芯片号（用于统计）
             verifiedBibNumbers.add(athlete.getBibNumber());
+            if (chipId != null && !chipId.isEmpty()) {
+                verifiedChipIds.add(chipId);
+            }
 
             logger.info("核验成功：参赛号={}, 姓名={}, 芯片={}", athlete.getBibNumber(), athlete.getName(), chipId);
 
@@ -132,6 +167,20 @@ public class VerificationService {
 
         // 保存到数据库
         saveVerificationRecord(record);
+
+        // 通知右侧面板显示结果
+        final String chip = record.getChipId();
+        final String bib = record.getBibNumber();
+        final String name = record.getName();
+        final boolean success = (athlete != null);
+        if (resultCallback != null) {
+            Platform.runLater(() -> resultCallback.onResult(
+                chip != null ? chip : "",
+                bib != null ? bib : "",
+                name != null ? name : "",
+                success
+            ));
+        }
 
         // 添加到记录列表（TableView会自动更新）
         Platform.runLater(() -> {
@@ -205,6 +254,79 @@ public class VerificationService {
     }
 
     /**
+     * 获取芯片总数（当前赛事所有选手绑定的去重芯片数）
+     */
+    public int getTotalChipCount() {
+        if (currentRaceId == null) {
+            return 0;
+        }
+
+        String sql = """
+            SELECT COUNT(DISTINCT chip) FROM (
+                SELECT chip1 AS chip FROM athletes WHERE race_id = ? AND chip1 IS NOT NULL AND chip1 <> ''
+                UNION ALL
+                SELECT chip2 AS chip FROM athletes WHERE race_id = ? AND chip2 IS NOT NULL AND chip2 <> ''
+                UNION ALL
+                SELECT chip3 AS chip FROM athletes WHERE race_id = ? AND chip3 IS NOT NULL AND chip3 <> ''
+                UNION ALL
+                SELECT chip4 AS chip FROM athletes WHERE race_id = ? AND chip4 IS NOT NULL AND chip4 <> ''
+            )
+            """;
+
+        try (PreparedStatement stmt = databaseService.getConnection().prepareStatement(sql)) {
+            stmt.setLong(1, currentRaceId);
+            stmt.setLong(2, currentRaceId);
+            stmt.setLong(3, currentRaceId);
+            stmt.setLong(4, currentRaceId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("查询芯片总数失败：赛事ID={}", currentRaceId, e);
+        }
+        return 0;
+    }
+
+    /**
+     * 获取已核验芯片数（去重）
+     */
+    public int getVerifiedChipCount() {
+        return verifiedChipIds.size();
+    }
+
+    /**
+     * 获取当前赛事未核验的芯片列表（按选手展开）
+     */
+    public List<UnverifiedChip> getUnverifiedChips() {
+        List<UnverifiedChip> result = new ArrayList<>();
+        if (currentRaceId == null) {
+            return result;
+        }
+
+        List<Athlete> athletes = athleteService.getAthletesByRaceId(currentRaceId);
+        for (Athlete athlete : athletes) {
+            addIfUnverified(result, athlete.getBibNumber(), athlete.getName(), athlete.getChip1());
+            addIfUnverified(result, athlete.getBibNumber(), athlete.getName(), athlete.getChip2());
+            addIfUnverified(result, athlete.getBibNumber(), athlete.getName(), athlete.getChip3());
+            addIfUnverified(result, athlete.getBibNumber(), athlete.getName(), athlete.getChip4());
+        }
+        return result;
+    }
+
+    private void addIfUnverified(List<UnverifiedChip> list, String bibNumber, String name, String chipId) {
+        if (chipId == null || chipId.trim().isEmpty()) {
+            return;
+        }
+        String chip = chipId.trim();
+        if (!verifiedChipIds.contains(chip)) {
+            list.add(new UnverifiedChip(bibNumber, name, chip, "未核验"));
+        }
+    }
+
+    /**
      * 清空记录（仅清空记录列表，不清空核验人数统计）
      */
     public void clearRecords() {
@@ -228,6 +350,7 @@ public class VerificationService {
 
             // 2. 清空内存统计
             verifiedBibNumbers.clear();
+            verifiedChipIds.clear();
 
             // 3. 清空UI显示
             records.clear();

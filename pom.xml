@@ -7,7 +7,7 @@
 
     <groupId>com.race</groupId>
     <artifactId>race-chipcheck-offline</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
 
     <name>Race Chip Check Offline Application</name>

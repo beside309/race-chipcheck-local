@@ -5,8 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 
 /**
  * 选手管理服务（支持多芯片查询）
@@ -175,6 +175,46 @@ public class AthleteService {
         }
 
         return 0;
+    }
+
+    /**
+     * 校验选手芯片号（用于编辑时检查重复）
+     * 检查：芯片1不能为空、同选手内芯片不重复、芯片未被其他选手使用
+     *
+     * @param raceId  赛事ID
+     * @param athlete 当前编辑的选手
+     * @return 有错误时返回错误信息，否则返回 null
+     */
+    public String validateChipsForUpdate(Long raceId, Athlete athlete) {
+        // 芯片1不能为空
+        if (athlete.getChip1() == null || athlete.getChip1().trim().isEmpty()) {
+            return "芯片1不能为空";
+        }
+
+        List<String> chips = Arrays.asList(
+            athlete.getChip1(), athlete.getChip2(),
+            athlete.getChip3(), athlete.getChip4()
+        );
+        Set<String> seen = new HashSet<>();
+
+        for (String chip : chips) {
+            if (chip == null || chip.trim().isEmpty()) {
+                continue;
+            }
+            chip = chip.trim();
+
+            // 同选手内芯片不能重复
+            if (!seen.add(chip)) {
+                return "芯片号重复：" + chip;
+            }
+
+            // 芯片不能被其他选手使用
+            Athlete other = findAthleteByChip(raceId, chip);
+            if (other != null && !other.getId().equals(athlete.getId())) {
+                return "芯片号重复：" + chip + " 已被选手 " + other.getBibNumber() + " 使用";
+            }
+        }
+        return null;
     }
 
     /**

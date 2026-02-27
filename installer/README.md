@@ -15,7 +15,7 @@
    package.bat
    ```
 
-3. 打包完成后，安装程序位于：`installer/output/RaceChipCheck-1.0.1.exe`
+3. 打包完成后，安装程序位于：`installer/output/RaceChipCheck-1.0.2.exe`
 
 ### 打包产物
 

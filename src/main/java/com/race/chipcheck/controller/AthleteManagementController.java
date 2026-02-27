@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * 选手维护控制器
@@ -170,28 +171,46 @@ public class AthleteManagementController {
             saveAthlete(event.getRowValue());
         });
 
-        chip1Column.setOnEditCommit(event -> {
-            event.getRowValue().setChip1(event.getNewValue());
-            saveAthlete(event.getRowValue());
-        });
+        chip1Column.setOnEditCommit(event -> handleChipEdit(
+            event.getRowValue(), event.getNewValue(), event.getOldValue(),
+            (a, v) -> a.setChip1(v)));
 
-        chip2Column.setOnEditCommit(event -> {
-            event.getRowValue().setChip2(event.getNewValue());
-            saveAthlete(event.getRowValue());
-        });
+        chip2Column.setOnEditCommit(event -> handleChipEdit(
+            event.getRowValue(), event.getNewValue(), event.getOldValue(),
+            (a, v) -> a.setChip2(v)));
 
-        chip3Column.setOnEditCommit(event -> {
-            event.getRowValue().setChip3(event.getNewValue());
-            saveAthlete(event.getRowValue());
-        });
+        chip3Column.setOnEditCommit(event -> handleChipEdit(
+            event.getRowValue(), event.getNewValue(), event.getOldValue(),
+            (a, v) -> a.setChip3(v)));
 
-        chip4Column.setOnEditCommit(event -> {
-            event.getRowValue().setChip4(event.getNewValue());
-            saveAthlete(event.getRowValue());
-        });
+        chip4Column.setOnEditCommit(event -> handleChipEdit(
+            event.getRowValue(), event.getNewValue(), event.getOldValue(),
+            (a, v) -> a.setChip4(v)));
 
         // 绑定数据
         athleteTable.setItems(athletes);
+    }
+
+    /**
+     * 处理芯片编辑（含重复校验）
+     */
+    private void handleChipEdit(Athlete athlete, String newValue, String oldValue,
+                               BiConsumer<Athlete, String> setter) {
+        if (currentRace == null) {
+            setter.accept(athlete, oldValue);
+            athleteTable.refresh();
+            return;
+        }
+
+        setter.accept(athlete, newValue);
+        String error = athleteService.validateChipsForUpdate(currentRace.getId(), athlete);
+        if (error != null) {
+            setter.accept(athlete, oldValue);
+            athleteTable.refresh();
+            AlertHelper.showWarning("保存失败", error);
+            return;
+        }
+        saveAthlete(athlete);
     }
 
     /**

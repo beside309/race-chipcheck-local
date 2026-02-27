@@ -4,7 +4,7 @@
   <groupId>com.race</groupId>
   <artifactId>race-chipcheck-offline</artifactId>
   <name>Race Chip Check Offline Application</name>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <description>赛事选手芯片核验系统脱机版</description>
   <build>
     <plugins>

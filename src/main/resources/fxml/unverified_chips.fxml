@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.race.chipcheck.controller.UnverifiedChipDialogController"
+            prefWidth="700" prefHeight="400">
+
+    <top>
+        <Label fx:id="summaryLabel"
+               text="检测到共有 0 个芯片未核验"
+               style="-fx-padding: 10; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+    </top>
+
+    <center>
+        <TableView fx:id="chipTable" style="-fx-font-size: 13px;">
+            <columns>
+                <TableColumn fx:id="bibColumn" text="参赛号" prefWidth="120"/>
+                <TableColumn fx:id="nameColumn" text="姓名" prefWidth="150"/>
+                <TableColumn fx:id="chipColumn" text="芯片号" prefWidth="260"/>
+                <TableColumn fx:id="statusColumn" text="状态" prefWidth="100"/>
+            </columns>
+            <placeholder>
+                <Label text="当前没有未核验的芯片" style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10;">
+            <Button fx:id="refreshButton" text="刷新" onAction="#handleRefresh"
+                    style="-fx-font-size: 13px; -fx-padding: 6 14;"/>
+            <Button fx:id="closeButton" text="关闭" onAction="#handleClose"
+                    style="-fx-font-size: 13px; -fx-padding: 6 14;"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
+

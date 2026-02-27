@@ -2,7 +2,7 @@
 chcp 936 >nul 2>nul
 echo ========================================
 echo RaceChipCheck Offline - Windows Packager
-echo Version: 1.0.1
+echo Version: 1.0.2
 echo ========================================
 echo.
 
@@ -46,11 +46,11 @@ REM Run jpackage
 jpackage ^
   --input target ^
   --name "RaceChipCheckOffline" ^
-  --main-jar race-chipcheck-offline-1.0.1.jar ^
+  --main-jar race-chipcheck-offline-1.0.2.jar ^
   --main-class com.race.chipcheck.RaceChipCheckApp ^
   --type exe ^
   --dest installer\output ^
-  --app-version 1.0.1 ^
+  --app-version 1.0.2 ^
   --description "RaceChipCheck Offline" ^
   --vendor "iNRace System" ^
   --copyright "Copyright 2026" ^

@@ -10,7 +10,7 @@
             fx:controller="com.race.chipcheck.controller.VerificationController"
             prefHeight="700.0" prefWidth="1350.0">
 
-    <!-- 顶部：控制栏 -->
+    <!-- 顶部：控制栏（连接、清空、语音/报警设置、核验信息设置、测试） -->
     <top>
         <VBox spacing="10" style="-fx-padding: 10;">
             <!-- 第一行：连接按钮和状态 + 设置 -->
@@ -40,14 +40,14 @@
 
                 <Separator orientation="VERTICAL" prefHeight="30"/>
 
-                <!-- 语音播报设置 -->
+                <!-- 语音播报设置：复选框 -->
                 <VBox spacing="5">
                     <Label text="语音播报设置" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #555;"/>
                     <HBox spacing="10" alignment="CENTER_LEFT">
                         <CheckBox fx:id="voiceEnabledCheckbox" text="启用语音" style="-fx-font-size: 12px;"/>
                         <Label text="播报:" style="-fx-font-size: 11px;"/>
-                        <RadioButton fx:id="voiceContentBibRadio" text="号码布" selected="true" style="-fx-font-size: 11px;"/>
-                        <RadioButton fx:id="voiceContentNameRadio" text="姓名" style="-fx-font-size: 11px;"/>
+                        <CheckBox fx:id="voiceContentBibCheckbox" text="参赛号码" style="-fx-font-size: 11px;"/>
+                        <CheckBox fx:id="voiceContentNameCheckbox" text="姓名" style="-fx-font-size: 11px;"/>
                     </HBox>
                 </VBox>
 
@@ -55,35 +55,62 @@
 
                 <!-- 报警声音设置 -->
                 <CheckBox fx:id="alertSoundCheckbox" text="启用报警声音" selected="true" style="-fx-font-size: 12px;"/>
+
+                <Separator orientation="VERTICAL" prefHeight="30"/>
+
+                <!-- 核验信息显示设置（控制右侧显示内容） -->
+                <VBox spacing="5">
+                    <Label text="核验信息设置" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #555;"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <CheckBox fx:id="displayBibCheckbox" text="参赛号码" selected="true" style="-fx-font-size: 12px;"/>
+                        <CheckBox fx:id="displayNameCheckbox" text="姓名" selected="true" style="-fx-font-size: 12px;"/>
+                    </HBox>
+                </VBox>
             </HBox>
 
-            <!-- 第二行：核验测试 -->
+            <!-- 第二行：核验测试 + 未核验芯片 -->
             <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #fffbf0; -fx-border-color: #ffd700; -fx-border-radius: 5;">
                 <Label text="核验测试：" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
                 <TextField fx:id="testChipIdField" promptText="手动输入芯片号进行测试" prefWidth="300"
                            style="-fx-font-size: 14px;"/>
                 <Button fx:id="testButton" text="测试核验" onAction="#handleTest"
                         style="-fx-font-size: 14px; -fx-padding: 8 20; -fx-background-color: #4CAF50; -fx-text-fill: white;"/>
-                <Label text="（用于测试系统是否正常工作）" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+                <Button fx:id="unverifiedChipButton" text="未核验芯片" onAction="#handleShowUnverifiedChips"
+                        style="-fx-font-size: 14px; -fx-padding: 8 16;"/>
             </HBox>
         </VBox>
     </top>
 
-    <!-- 中间：TableView -->
+    <!-- 中间：左右可拖动分栏（左：表格；右：大号参赛号+姓名） -->
     <center>
-        <TableView fx:id="recordTable" style="-fx-font-size: 13px;">
-            <columns>
-                <TableColumn fx:id="timeColumn" text="核验时间" prefWidth="150"/>
-                <TableColumn fx:id="chipIdColumn" text="芯片号" prefWidth="180"/>
-                <TableColumn fx:id="bibNumberColumn" text="参赛号" prefWidth="100"/>
-                <TableColumn fx:id="nameColumn" text="姓名" prefWidth="120"/>
-                <TableColumn fx:id="statusColumn" text="状态" prefWidth="80"/>
-                <TableColumn fx:id="remarkColumn" text="备注" prefWidth="200"/>
-            </columns>
-            <placeholder>
-                <Label text="暂无核验记录" style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
-            </placeholder>
-        </TableView>
+        <SplitPane dividerPositions="0.5">
+            <items>
+                <!-- 左栏：核验记录表（支持拖动改变宽度） -->
+                <TableView fx:id="recordTable" style="-fx-font-size: 13px;">
+                    <columns>
+                        <TableColumn fx:id="timeColumn" text="核验时间" prefWidth="150"/>
+                        <TableColumn fx:id="chipIdColumn" text="芯片号" prefWidth="180"/>
+                        <TableColumn fx:id="bibNumberColumn" text="参赛号" prefWidth="100"/>
+                        <TableColumn fx:id="nameColumn" text="姓名" prefWidth="120"/>
+                        <TableColumn fx:id="statusColumn" text="状态" prefWidth="80"/>
+                        <TableColumn fx:id="remarkColumn" text="备注" prefWidth="200"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="暂无核验记录" style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
+                    </placeholder>
+                </TableView>
+
+                <!-- 右栏：核验结果大字显示（默认一半宽度，可拖动分隔条调整） -->
+                <VBox style="-fx-padding: 24; -fx-background-color: #fafafa;">
+                    <VBox spacing="24" VBox.vgrow="ALWAYS" alignment="CENTER">
+                        <Label fx:id="resultBibLabel" text="" style="-fx-font-size: 112px; -fx-font-weight: bold; -fx-text-fill: #1976D2;"
+                               visible="true" managed="true"/>
+                        <Label fx:id="resultNameLabel" text="" style="-fx-font-size: 72px; -fx-font-weight: bold; -fx-text-fill: #333;"
+                               visible="true" managed="true"/>
+                    </VBox>
+                </VBox>
+            </items>
+        </SplitPane>
     </center>
 
     <!-- 底部：统计信息 -->
@@ -96,6 +123,12 @@
             <Label fx:id="athleteCountLabel" text="已核验人数: 0"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;"/>
             <Label fx:id="unverifiedCountLabel" text="未核验人数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #FF9800;"/>
+            <Label fx:id="totalChipCountLabel" text="芯片总数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #666666;"/>
+            <Label fx:id="verifiedChipCountLabel" text="已核验芯片数: 0"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;"/>
+            <Label fx:id="unverifiedChipCountLabel" text="未核验芯片数: 0"
                    style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #FF9800;"/>
         </HBox>
     </bottom>

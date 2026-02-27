@@ -2,16 +2,20 @@ package com.race.chipcheck.controller;
 
 import com.race.chipcheck.model.Race;
 import com.race.chipcheck.model.VerificationRecord;
-import com.race.chipcheck.model.VoiceContentType;
 import com.race.chipcheck.service.*;
 import com.race.chipcheck.util.AlertHelper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,16 +85,37 @@ public class VerificationController {
     private Label unverifiedCountLabel;
 
     @FXML
+    private Label totalChipCountLabel;
+
+    @FXML
+    private Label verifiedChipCountLabel;
+
+    @FXML
+    private Label unverifiedChipCountLabel;
+
+    @FXML
     private CheckBox voiceEnabledCheckbox;
 
     @FXML
-    private RadioButton voiceContentBibRadio;
+    private CheckBox voiceContentBibCheckbox;
 
     @FXML
-    private RadioButton voiceContentNameRadio;
+    private CheckBox voiceContentNameCheckbox;
 
     @FXML
     private CheckBox alertSoundCheckbox;
+
+    @FXML
+    private CheckBox displayBibCheckbox;
+
+    @FXML
+    private CheckBox displayNameCheckbox;
+
+    @FXML
+    private Label resultBibLabel;
+
+    @FXML
+    private Label resultNameLabel;
 
     // Services
     private final DatabaseService databaseService;
@@ -108,6 +133,15 @@ public class VerificationController {
 
     // 当前赛事
     private Race currentRace;
+
+    // 最近一次核验结果（用于右侧显示，受“核验信息设置”复选框控制）
+    private String lastResultBib = "";
+    private String lastResultName = "";
+
+    // “未核验芯片”窗口
+    private Stage unverifiedChipStage;
+    private UnverifiedChipDialogController unverifiedChipDialogController;
+    private boolean autoUnverifiedDialogShown = false;
 
     public VerificationController() {
         // 初始化Services
@@ -156,8 +190,51 @@ public class VerificationController {
         // 初始化配置UI
         setupPreferences();
 
+        // 核验结果回调：更新右侧显示
+        verificationService.setResultCallback(this::onVerificationResult);
+
+        // 右侧“核验信息设置”复选框变化时刷新显示
+        if (displayBibCheckbox != null) {
+            displayBibCheckbox.selectedProperty().addListener((o, a, b) -> updateResultLabels());
+        }
+        if (displayNameCheckbox != null) {
+            displayNameCheckbox.selectedProperty().addListener((o, a, b) -> updateResultLabels());
+        }
+
         // 预热 TTS 系统（在后台完成，避免首次使用时延迟）
         ttsService.warmup();
+    }
+
+    /**
+     * 核验结果回调：更新右侧参赛号、姓名显示，并在“未核验芯片”窗口打开时刷新列表
+     */
+    private void onVerificationResult(String chipId, String bibNumber, String name, boolean success) {
+        lastResultBib = bibNumber != null ? bibNumber : "";
+        lastResultName = name != null ? name : "";
+        updateResultLabels();
+
+        if (success && unverifiedChipStage != null && unverifiedChipStage.isShowing() && unverifiedChipDialogController != null) {
+            unverifiedChipDialogController.refreshData();
+        }
+    }
+
+    /**
+     * 根据“核验信息设置”复选框更新右侧标签内容与可见性
+     */
+    private void updateResultLabels() {
+        if (resultBibLabel == null || resultNameLabel == null) {
+            return;
+        }
+        boolean showBib = displayBibCheckbox != null && displayBibCheckbox.isSelected();
+        boolean showName = displayNameCheckbox != null && displayNameCheckbox.isSelected();
+
+        resultBibLabel.setText(showBib ? lastResultBib : "");
+        resultBibLabel.setVisible(showBib);
+        resultBibLabel.setManaged(showBib);
+
+        resultNameLabel.setText(showName ? lastResultName : "");
+        resultNameLabel.setVisible(showName);
+        resultNameLabel.setManaged(showName);
     }
 
     /**
@@ -179,6 +256,9 @@ public class VerificationController {
 
         // 立即更新统计信息
         updateStatistics();
+
+        // 切换赛事时重置自动弹窗标记
+        autoUnverifiedDialogShown = false;
     }
 
     /**
@@ -326,10 +406,55 @@ public class VerificationController {
         int verifiedCount = verificationService.getVerifiedAthleteCount();
         int unverifiedCount = totalCount - verifiedCount;
 
+        int totalChipCount = verificationService.getTotalChipCount();
+        int verifiedChipCount = verificationService.getVerifiedChipCount();
+        int unverifiedChipCount = totalChipCount - verifiedChipCount;
+
         recordCountLabel.setText("核验记录数: " + verificationService.getTotalRecordCount());
         totalAthleteCountLabel.setText("总人数: " + totalCount);
         athleteCountLabel.setText("已核验人数: " + verifiedCount);
         unverifiedCountLabel.setText("未核验人数: " + unverifiedCount);
+        totalChipCountLabel.setText("芯片总数: " + totalChipCount);
+        verifiedChipCountLabel.setText("已核验芯片数: " + verifiedChipCount);
+        unverifiedChipCountLabel.setText("未核验芯片数: " + unverifiedChipCount);
+
+        // 当未核验人数为 0 且仍有未核验芯片时，自动弹出“未核验芯片”窗口（每个赛事仅弹一次）
+        if (totalCount > 0 && unverifiedCount == 0 && unverifiedChipCount > 0 && !autoUnverifiedDialogShown) {
+            autoUnverifiedDialogShown = true;
+            javafx.application.Platform.runLater(this::openUnverifiedChipDialog);
+        }
+    }
+
+    /**
+     * 手动打开“未核验芯片”窗口
+     */
+    @FXML
+    private void handleShowUnverifiedChips() {
+        openUnverifiedChipDialog();
+    }
+
+    private void openUnverifiedChipDialog() {
+        try {
+            if (unverifiedChipStage == null) {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/unverified_chips.fxml"));
+                Parent root = loader.load();
+                unverifiedChipDialogController = loader.getController();
+                unverifiedChipDialogController.setVerificationService(verificationService);
+
+                unverifiedChipStage = new Stage();
+                unverifiedChipStage.setTitle("未核验芯片");
+                unverifiedChipStage.initOwner(recordTable.getScene().getWindow());
+                unverifiedChipStage.initModality(Modality.NONE);
+                unverifiedChipStage.setScene(new Scene(root));
+            }
+
+            unverifiedChipDialogController.refreshData();
+            unverifiedChipStage.show();
+            unverifiedChipStage.toFront();
+        } catch (Exception e) {
+            logger.error("打开未核验芯片窗口失败", e);
+            AlertHelper.showError("打开失败", "无法打开未核验芯片窗口：" + e.getMessage());
+        }
     }
 
     /**
@@ -432,11 +557,6 @@ public class VerificationController {
      * 初始化配置UI
      */
     private void setupPreferences() {
-        // RadioButton 分组
-        ToggleGroup voiceContentGroup = new ToggleGroup();
-        voiceContentBibRadio.setToggleGroup(voiceContentGroup);
-        voiceContentNameRadio.setToggleGroup(voiceContentGroup);
-
         // 加载配置到 UI
         loadPreferences();
 
@@ -451,45 +571,35 @@ public class VerificationController {
         voiceEnabledCheckbox.setSelected(preferenceService.isVoiceEnabled());
         alertSoundCheckbox.setSelected(preferenceService.isAlertSoundEnabled());
 
-        VoiceContentType contentType = preferenceService.getVoiceContent();
-        if (contentType == VoiceContentType.NAME) {
-            voiceContentNameRadio.setSelected(true);
-        } else {
-            voiceContentBibRadio.setSelected(true);
-        }
+        voiceContentBibCheckbox.setSelected(preferenceService.isVoiceContentBibEnabled());
+        voiceContentNameCheckbox.setSelected(preferenceService.isVoiceContentNameEnabled());
 
-        logger.info("配置加载完成：语音={}, 报警={}, 播报内容={}",
+        logger.info("配置加载完成：语音={}, 报警={}, 播报参赛号={}, 播报姓名={}",
             preferenceService.isVoiceEnabled(),
             preferenceService.isAlertSoundEnabled(),
-            contentType);
+            preferenceService.isVoiceContentBibEnabled(),
+            preferenceService.isVoiceContentNameEnabled());
     }
 
     /**
      * 设置配置监听器
      */
     private void setupPreferenceListeners() {
-        // 语音播报开关
         voiceEnabledCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
             preferenceService.setVoiceEnabled(newVal);
             logger.info("语音播报已{}", newVal ? "启用" : "禁用");
         });
 
-        // 播报内容切换
-        voiceContentBibRadio.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                preferenceService.setVoiceContent(VoiceContentType.BIB_NUMBER);
-                logger.info("播报内容切换为：号码布");
-            }
+        voiceContentBibCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            preferenceService.setVoiceContentBibEnabled(newVal);
+            logger.info("播报参赛号码已{}", newVal ? "启用" : "禁用");
         });
 
-        voiceContentNameRadio.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                preferenceService.setVoiceContent(VoiceContentType.NAME);
-                logger.info("播报内容切换为：姓名");
-            }
+        voiceContentNameCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            preferenceService.setVoiceContentNameEnabled(newVal);
+            logger.info("播报姓名已{}", newVal ? "启用" : "禁用");
         });
 
-        // 报警声音开关
         alertSoundCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
             preferenceService.setAlertSoundEnabled(newVal);
             logger.info("报警声音已{}", newVal ? "启用" : "禁用");

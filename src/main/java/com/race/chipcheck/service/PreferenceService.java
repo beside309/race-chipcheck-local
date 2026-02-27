@@ -37,25 +37,59 @@ public class PreferenceService {
     }
 
     /**
-     * 获取语音播报内容类型
-     * @return 播报内容类型（号码布或姓名）
+     * 是否播报参赛号码
      */
-    public VoiceContentType getVoiceContent() {
-        String value = getValue("voice_content", "BIB_NUMBER");
-        try {
-            return VoiceContentType.valueOf(value);
-        } catch (IllegalArgumentException e) {
-            logger.warn("无效的播报内容类型：{}，使用默认值", value);
-            return VoiceContentType.BIB_NUMBER;
-        }
+    public boolean isVoiceContentBibEnabled() {
+        migrateVoiceContentIfNeeded();
+        return Boolean.parseBoolean(getValue("voice_content_bib", "true"));
+    }
+
+    public void setVoiceContentBibEnabled(boolean enabled) {
+        setValue("voice_content_bib", String.valueOf(enabled));
     }
 
     /**
-     * 设置语音播报内容类型
-     * @param type 播报内容类型
+     * 是否播报姓名
      */
+    public boolean isVoiceContentNameEnabled() {
+        migrateVoiceContentIfNeeded();
+        return Boolean.parseBoolean(getValue("voice_content_name", "false"));
+    }
+
+    public void setVoiceContentNameEnabled(boolean enabled) {
+        setValue("voice_content_name", String.valueOf(enabled));
+    }
+
+    /** 从旧的 voice_content 迁移到 voice_content_bib/name（仅执行一次） */
+    private void migrateVoiceContentIfNeeded() {
+        if (getValue("voice_content_bib", null) != null) {
+            return;
+        }
+        String old = getValue("voice_content", "BIB_NUMBER");
+        if ("NAME".equals(old)) {
+            setValue("voice_content_bib", "false");
+            setValue("voice_content_name", "true");
+        } else {
+            setValue("voice_content_bib", "true");
+            setValue("voice_content_name", "false");
+        }
+    }
+
+    /** 兼容旧 API：按当前两个布尔值返回等效类型（供测试等使用） */
+    public VoiceContentType getVoiceContent() {
+        migrateVoiceContentIfNeeded();
+        boolean bib = Boolean.parseBoolean(getValue("voice_content_bib", "true"));
+        boolean name = Boolean.parseBoolean(getValue("voice_content_name", "false"));
+        if (name && !bib) {
+            return VoiceContentType.NAME;
+        }
+        return VoiceContentType.BIB_NUMBER;
+    }
+
+    /** 兼容旧 API：设置单一类型时另一项关闭 */
     public void setVoiceContent(VoiceContentType type) {
-        setValue("voice_content", type.name());
+        setValue("voice_content_bib", type == VoiceContentType.BIB_NUMBER ? "true" : "false");
+        setValue("voice_content_name", type == VoiceContentType.NAME ? "true" : "false");
     }
 
     /**

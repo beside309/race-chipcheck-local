@@ -1,7 +1,6 @@
 package com.race.chipcheck.service;
 
 import com.race.chipcheck.model.Athlete;
-import com.race.chipcheck.model.VoiceContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,21 +70,28 @@ public class TTSService {
     }
 
     /**
-     * 播报选手信息（根据配置选择号码布或姓名）
+     * 播报选手信息（根据配置：参赛号码、姓名可多选，都选中时播报“参赛号码+姓名”）
      * @param athlete 选手信息
      */
     public void speakAthleteInfo(Athlete athlete) {
-        VoiceContentType contentType = preferenceService.getVoiceContent();
-        String text;
+        boolean speakBib = preferenceService.isVoiceContentBibEnabled();
+        boolean speakName = preferenceService.isVoiceContentNameEnabled();
 
-        if (contentType == VoiceContentType.NAME) {
-            text = athlete.getName();
-        } else {
-            // 号码布：逐字播报（如 "A123" → "A 1 2 3"）
-            text = formatBibNumber(athlete.getBibNumber());
+        if (!speakBib && !speakName) {
+            return;
         }
 
-        speak(text);
+        StringBuilder sb = new StringBuilder();
+        if (speakBib) {
+            sb.append(formatBibNumber(athlete.getBibNumber()));
+        }
+        if (speakName) {
+            if (sb.length() > 0) {
+                sb.append(" ");
+            }
+            sb.append(athlete.getName() != null ? athlete.getName() : "");
+        }
+        speak(sb.toString());
     }
 
     /**
