@@ -106,34 +106,33 @@ public class JSerialCommTransport {
 
     private void startReadThread() {
         readThread = new Thread(() -> {
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[4096];  // 增大缓冲区减少 read 调用次数
 
             while (isConnected && !Thread.currentThread().isInterrupted()) {
                 try {
-                    if (serialPort.bytesAvailable() > 0) {
-                        int bytesRead = inputStream.read(buffer);
-                        if (bytesRead > 0) {
-                            byte[] data = new byte[bytesRead];
-                            System.arraycopy(buffer, 0, data, 0, bytesRead);
-                            receiveQueue.put(data);
+                    // 阻塞读取：TIMEOUT_READ_BLOCKING 模式下 read() 会等待直到有数据或超时
+                    // 无需 bytesAvailable 预检 + sleep 空转，直接阻塞等待更高效
+                    int bytesRead = inputStream.read(buffer);
+                    if (bytesRead > 0) {
+                        byte[] data = new byte[bytesRead];
+                        System.arraycopy(buffer, 0, data, 0, bytesRead);
+                        receiveQueue.put(data);
 
-                            // 解析并打印 RFID 数据包
-                            String hexString = bytesToHex(data, bytesRead);
-                            String tagInfo = parseRfidTagData(data, bytesRead);
+                        // 解析并打印 RFID 数据包
+                        String hexString = bytesToHex(data, bytesRead);
+                        String tagInfo = parseRfidTagData(data, bytesRead);
+                        
+                        logger.info("Received {} bytes - Hex: {}", bytesRead, hexString);
+                        if (!tagInfo.isEmpty()) {
+                            logger.info("  Tag Info: {}", tagInfo);
                             
-                            logger.info("Received {} bytes - Hex: {}", bytesRead, hexString);
-                            if (!tagInfo.isEmpty()) {
-                                logger.info("  Tag Info: {}", tagInfo);
-                                
-                                // 提取 EPC 并触发回调
-                                String epc = extractEpcFromTagInfo(tagInfo);
-                                if (epc != null && !epc.isEmpty() && appNotify != null) {
-                                    triggerNotifyRecvTags(data, 0, epc);
-                                }
+                            // 提取 EPC 并触发回调
+                            String epc = extractEpcFromTagInfo(tagInfo);
+                            if (epc != null && !epc.isEmpty() && appNotify != null) {
+                                triggerNotifyRecvTags(data, 0, epc);
                             }
                         }
                     }
-                    Thread.sleep(1); // 减少CPU占用
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -323,6 +322,54 @@ public class JSerialCommTransport {
         } catch (Exception e) {
             logger.error("触发 NotifyRecvTags 回调失败", e);
         }
+    }
+
+    /**
+     * 解析原始字节数据，提取第一个 EPC（对上层公开，避免 RfidReaderService 重复解析）
+     * @param message RFID 数据包原始字节
+     * @return EPC 十六进制字符串，解析失败返回 null
+     */
+    public String parseEpc(byte[] message) {
+        if (message == null || message.length < 2) {
+            return null;
+        }
+
+        // 检查是否是 RFID 协议（以 "RF" 0x52 0x46 开头）
+        if (message[0] == 0x52 && message[1] == 0x46) {
+            // 查找 EPC 数据（标记为 01 08）
+            for (int i = 0; i < message.length - 10; i++) {
+                if (message[i] == 0x01 && message[i + 1] == 0x08) {
+                    int epcStart = i + 2;
+                    int epcLength = 8;
+
+                    if (epcStart + epcLength <= message.length) {
+                        byte[] epcData = new byte[epcLength];
+                        System.arraycopy(message, epcStart, epcData, 0, epcLength);
+                        return bytesToHexCompact(epcData);
+                    }
+                }
+            }
+
+            // 如果没找到标准格式，尝试从固定位置提取（兼容其他格式）
+            if (message.length >= 20) {
+                byte[] epcData = new byte[8];
+                System.arraycopy(message, 12, epcData, 0, 8);
+                return bytesToHexCompact(epcData);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 字节数组转紧凑十六进制（无空格，大写）
+     */
+    private String bytesToHexCompact(byte[] data) {
+        StringBuilder sb = new StringBuilder(data.length * 2);
+        for (byte b : data) {
+            sb.append(String.format("%02X", b & 0xFF));
+        }
+        return sb.toString();
     }
 
     /**

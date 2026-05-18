@@ -62,9 +62,11 @@ public class DatabaseService {
             connection = DriverManager.getConnection(dbUrl);
             logger.info("数据库连接成功：{}", dbUrl);
 
-            // 启用外键约束
+            // 性能优化：WAL模式允许并发读写，NORMAL同步在保证基本安全的同时提升写入速度
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys = ON");
+                stmt.execute("PRAGMA journal_mode = WAL");
+                stmt.execute("PRAGMA synchronous = NORMAL");
             }
 
             // 创建表结构
@@ -145,7 +147,11 @@ public class DatabaseService {
 
             // 创建索引
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_race_id ON athletes(race_id)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chips ON athletes(chip1, chip2, chip3, chip4)");
+            // 拆分芯片索引：复合索引对 OR 查询无效，改为单列索引让 SQLite 为每个 OR 分支选择对应索引
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chip1 ON athletes(race_id, chip1)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chip2 ON athletes(race_id, chip2)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chip3 ON athletes(race_id, chip3)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_athletes_chip4 ON athletes(race_id, chip4)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_verification_race_id ON verification_records(race_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_verification_time ON verification_records(verification_time)");
 
