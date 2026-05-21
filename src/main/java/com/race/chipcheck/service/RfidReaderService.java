@@ -131,10 +131,55 @@ public class RfidReaderService {
     }
 
     /**
-     * 解析EPC — 委托给 JSerialCommTransport 的统一解析方法，避免重复解析逻辑
+     * 解析EPC（从JSerialCommTransport的回调中提取）
+     * 这里使用简化逻辑，实际解析已在JSerialCommTransport中完成
      */
     private String parseEpc(byte[] message) {
-        return transport != null ? transport.parseEpc(message) : null;
+        if (message == null || message.length < 2) {
+            return null;
+        }
+
+        // 检查是否是RFID协议（以 "RF" 0x52 0x46 开头）
+        if (message[0] == 0x52 && message[1] == 0x46) {
+            // 查找EPC数据（标记为 01 08）
+            for (int i = 0; i < message.length - 10; i++) {
+                if (message[i] == 0x01 && message[i + 1] == 0x08) {
+                    int epcStart = i + 2;
+                    int epcLength = 8;
+
+                    if (epcStart + epcLength <= message.length) {
+                        // 提取EPC并转为十六进制字符串
+                        StringBuilder epcHex = new StringBuilder();
+                        for (int j = 0; j < epcLength; j++) {
+                            String hex = Integer.toHexString(message[epcStart + j] & 0xFF);
+                            if (hex.length() == 1) {
+                                epcHex.append('0');
+                            }
+                            epcHex.append(hex);
+                        }
+                        return epcHex.toString().toUpperCase();
+                    }
+                }
+            }
+
+            // 如果没找到标准格式，尝试从固定位置提取
+            if (message.length >= 20) {
+                int epcStart = 12;
+                int epcLength = 8;
+
+                StringBuilder epcHex = new StringBuilder();
+                for (int j = 0; j < epcLength; j++) {
+                    String hex = Integer.toHexString(message[epcStart + j] & 0xFF);
+                    if (hex.length() == 1) {
+                        epcHex.append('0');
+                    }
+                    epcHex.append(hex);
+                }
+                return epcHex.toString().toUpperCase();
+            }
+        }
+
+        return null;
     }
 
     /**
